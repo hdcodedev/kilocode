@@ -21,7 +21,7 @@ import { ThinkingSelector } from "../shared/ThinkingSelector"
 import { useFileMention } from "../../hooks/useFileMention"
 import { useImageAttachments } from "../../hooks/useImageAttachments"
 import { WandSparkles } from "@kilocode/kilo-ui/lucide"
-import { fileName, dirName, buildHighlightSegments } from "./prompt-input-utils"
+import { fileName, dirName, buildHighlightSegments, isEnd } from "./prompt-input-utils"
 import type { ReviewComment } from "../../types/messages"
 import { formatReviewCommentsMarkdown } from "../../utils/review-comment-markdown"
 
@@ -130,6 +130,7 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
 
   let textareaRef: HTMLTextAreaElement | undefined
   let highlightRef: HTMLDivElement | undefined
+  let ghostRef: HTMLSpanElement | undefined
   let dropdownRef: HTMLDivElement | undefined
   let debounceTimer: ReturnType<typeof setTimeout> | undefined
   let requestCounter = 0
@@ -194,6 +195,7 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
       const result = message as { type: "chatCompletionResult"; text: string; requestId: string }
       if (result.requestId === `chat-ac-${requestCounter}` && result.text) {
         setGhostText(result.text)
+        queueMicrotask(() => updateGhostVisibility())
       }
     }
 
@@ -343,6 +345,11 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
     }
   }
 
+  const updateGhostVisibility = (node = textareaRef) => {
+    if (!ghostRef) return
+    ghostRef.hidden = !isEnd(node)
+  }
+
   const adjustHeight = () => {
     if (!textareaRef) return
     textareaRef.style.height = "auto"
@@ -403,6 +410,10 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
     }
 
     if ((e.key === "Tab" || e.key === "ArrowRight") && ghostText()) {
+      // Ghost completion is appended at the end, so only accept when caret is at end.
+      const node = textareaRef
+      if (!node) return
+      if (!isEnd(node)) return
       e.preventDefault()
       acceptSuggestion()
       return
@@ -598,7 +609,9 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
               )}
             </Index>
             <Show when={ghostText()}>
-              <span class="prompt-input-ghost-text">{ghostText()}</span>
+              <span ref={ghostRef} class="prompt-input-ghost-text">
+                {ghostText()}
+              </span>
             </Show>
           </div>
           <textarea
@@ -608,7 +621,9 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
             value={text()}
             onInput={handleInput}
             onKeyDown={handleKeyDown}
+            onKeyUp={() => updateGhostVisibility()}
             onPaste={handlePaste}
+            onMouseUp={() => updateGhostVisibility()}
             onScroll={syncHighlightScroll}
             disabled={isDisabled()}
             rows={1}

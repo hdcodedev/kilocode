@@ -3,6 +3,13 @@ export function fileName(path: string): string {
   return normalized.split("/").pop() ?? normalized
 }
 
+export function isEnd(node: HTMLTextAreaElement | undefined): boolean {
+  if (!node) return true
+  const start = node.selectionStart ?? 0
+  const end = node.selectionEnd ?? 0
+  return start === end && end === node.value.length
+}
+
 export function dirName(path: string): string {
   const parts = path.replaceAll("\\", "/").replace(/\/+$/, "").split("/")
   if (parts.length <= 1) return ""

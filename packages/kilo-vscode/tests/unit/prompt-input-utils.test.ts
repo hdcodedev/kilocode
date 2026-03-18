@@ -1,5 +1,5 @@
 import { describe, it, expect } from "bun:test"
-import { fileName, dirName, buildHighlightSegments } from "../../webview-ui/src/components/chat/prompt-input-utils"
+import { fileName, isEnd, dirName, buildHighlightSegments } from "../../webview-ui/src/components/chat/prompt-input-utils"
 
 describe("fileName", () => {
   it("extracts the last segment of a unix path", () => {
@@ -20,6 +20,27 @@ describe("fileName", () => {
 
   it("handles mixed separators", () => {
     expect(fileName("src\\components/chat/File.tsx")).toBe("File.tsx")
+  })
+})
+
+describe("isEnd", () => {
+  it("returns true when node is undefined", () => {
+    expect(isEnd(undefined)).toBe(true)
+  })
+
+  it("returns true when caret is collapsed at the end", () => {
+    const node = { selectionStart: 5, selectionEnd: 5, value: "hello" } as unknown as HTMLTextAreaElement
+    expect(isEnd(node)).toBe(true)
+  })
+
+  it("returns false when caret is in the middle", () => {
+    const node = { selectionStart: 2, selectionEnd: 2, value: "hello" } as unknown as HTMLTextAreaElement
+    expect(isEnd(node)).toBe(false)
+  })
+
+  it("returns false when text is selected", () => {
+    const node = { selectionStart: 1, selectionEnd: 3, value: "hello" } as unknown as HTMLTextAreaElement
+    expect(isEnd(node)).toBe(false)
   })
 })
 
