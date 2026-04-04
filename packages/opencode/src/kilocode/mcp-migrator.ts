@@ -41,14 +41,16 @@ export namespace McpMigrator {
   export async function readMcpSettings(filepath: string): Promise<KilocodeMcpSettings | null> {
     if (!(await Filesystem.exists(filepath))) return null
 
-    const content = await fs.readFile(filepath, "utf-8")
-    return JSON.parse(content) as KilocodeMcpSettings
+    try {
+      const content = await fs.readFile(filepath, "utf-8")
+      return JSON.parse(content) as KilocodeMcpSettings
+    } catch (err) {
+      log.warn("failed to parse MCP settings file, skipping", { filepath, error: err })
+      return null
+    }
   }
 
   export function convertServer(name: string, server: KilocodeMcpServer): Config.Mcp | null {
-    // Skip disabled servers
-    if (server.disabled) return null
-
     if (isRemote(server)) {
       if (!server.url) {
         log.warn("remote MCP server missing url, skipping", { name })
@@ -58,6 +60,7 @@ export namespace McpMigrator {
         type: "remote",
         url: server.url,
         ...(server.headers && Object.keys(server.headers).length > 0 && { headers: server.headers }),
+        ...(server.disabled && { enabled: false }),
       }
       return config
     }
@@ -75,6 +78,7 @@ export namespace McpMigrator {
       type: "local",
       command,
       ...(server.env && Object.keys(server.env).length > 0 && { environment: server.env }),
+      ...(server.disabled && { enabled: false }),
     }
 
     return config
@@ -125,11 +129,6 @@ export namespace McpMigrator {
 
     // Convert each server
     for (const [name, server] of serversByName) {
-      if (server.disabled) {
-        skipped.push({ name, reason: "Server is disabled" })
-        continue
-      }
-
       // Warn about alwaysAllow permissions that cannot be migrated
       if (server.alwaysAllow && server.alwaysAllow.length > 0) {
         warnings.push(

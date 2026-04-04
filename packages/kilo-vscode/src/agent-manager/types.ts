@@ -11,7 +11,7 @@ import type { FileDiff } from "@kilocode/sdk/v2/client"
 import type { Worktree, ManagedSession } from "./WorktreeStateManager"
 import type { WorktreeStats, LocalStats } from "./GitStatsPoller"
 import type { ApplyConflict } from "./GitOps"
-import type { BranchListItem } from "./git-import"
+import type { BranchListItem, WorktreeSetupErrorCode } from "./git-import"
 import type { ExternalWorktreeItem } from "./WorktreeManager"
 
 // ---------------------------------------------------------------------------
@@ -50,6 +50,7 @@ interface WorktreeSetupMessage {
   sessionId?: string
   branch?: string
   worktreeId?: string
+  errorCode?: WorktreeSetupErrorCode
 }
 
 interface SessionMetaMessage {
@@ -67,6 +68,7 @@ interface StateMessage {
   sessions: ManagedSession[]
   staleWorktreeIds?: string[]
   tabOrder?: Record<string, string[]>
+  worktreeOrder?: string[]
   sessionsCollapsed?: boolean
   reviewDiffStyle?: "unified" | "split"
   isGitRepo?: boolean
@@ -82,6 +84,13 @@ interface SessionAddedMessage {
   type: "agentManager.sessionAdded"
   sessionId: string
   worktreeId: string
+}
+
+interface SessionForkedMessage {
+  type: "agentManager.sessionForked"
+  sessionId: string
+  forkedFromId: string
+  worktreeId?: string
 }
 
 interface MultiVersionProgressMessage {
@@ -125,6 +134,7 @@ interface ImportResultMessage {
   type: "agentManager.importResult"
   success: boolean
   message: string
+  errorCode?: WorktreeSetupErrorCode
 }
 
 interface KeybindingsMessage {
@@ -179,6 +189,7 @@ export type AgentManagerOutMessage =
   | StateMessage
   | ErrorOutMessage
   | SessionAddedMessage
+  | SessionForkedMessage
   | MultiVersionProgressMessage
   | SetSessionModelMessage
   | SendInitialMessage
@@ -218,6 +229,11 @@ interface PromoteSessionIn {
   sessionId: string
 }
 
+interface OpenLocallyIn {
+  type: "agentManager.openLocally"
+  sessionId: string
+}
+
 interface AddSessionToWorktreeIn {
   type: "agentManager.addSessionToWorktree"
   worktreeId: string
@@ -244,6 +260,11 @@ interface ShowLocalTerminalIn {
 interface OpenWorktreeIn {
   type: "agentManager.openWorktree"
   worktreeId: string
+}
+
+interface CopyToClipboardIn {
+  type: "agentManager.copyToClipboard"
+  text: string
 }
 
 interface ShowExistingLocalTerminalIn {
@@ -285,6 +306,11 @@ interface RequestBranchesIn {
 interface SetTabOrderIn {
   type: "agentManager.setTabOrder"
   key: string
+  order: string[]
+}
+
+interface SetWorktreeOrderIn {
+  type: "agentManager.setWorktreeOrder"
   order: string[]
 }
 
@@ -369,18 +395,62 @@ interface GenericOpenFileIn {
   column?: number
 }
 
+interface PreviewImageIn {
+  type: "previewImage"
+  dataUrl: string
+  filename: string
+}
+
 interface LoadMessagesIn {
   type: "loadMessages"
   sessionID: string
+}
+
+interface SendMessageIn {
+  type: "sendMessage"
+  text: string
+  messageID?: string
+  sessionID?: string
+  draftID?: string
+  providerID?: string
+  modelID?: string
+  agent?: string
+  variant?: string
+  files?: Array<{ mime: string; url: string; filename?: string }>
+}
+
+interface SendCommandIn {
+  type: "sendCommand"
+  command: string
+  arguments: string
+  messageID?: string
+  sessionID?: string
+  draftID?: string
+  providerID?: string
+  modelID?: string
+  agent?: string
+  variant?: string
+  files?: Array<{ mime: string; url: string; filename?: string }>
 }
 
 interface ClearSessionIn {
   type: "clearSession"
 }
 
+interface ForkSessionIn {
+  type: "agentManager.forkSession"
+  sessionId: string
+  worktreeId?: string
+}
+
 interface AbortIn {
   type: "abort"
   sessionID: string
+}
+
+interface ContinueInWorktreeIn {
+  type: "continueInWorktree"
+  sessionId: string
 }
 
 /** All messages the Agent Manager expects from the webview (onMessage input). */
@@ -389,12 +459,15 @@ export type AgentManagerInMessage =
   | DeleteWorktreeIn
   | RemoveStaleWorktreeIn
   | PromoteSessionIn
+  | OpenLocallyIn
   | AddSessionToWorktreeIn
   | CloseSessionIn
+  | ForkSessionIn
   | ConfigureSetupScriptIn
   | ShowTerminalIn
   | ShowLocalTerminalIn
   | OpenWorktreeIn
+  | CopyToClipboardIn
   | ShowExistingLocalTerminalIn
   | RequestRepoInfoIn
   | CreateMultiVersionIn
@@ -402,6 +475,7 @@ export type AgentManagerInMessage =
   | RequestStateIn
   | RequestBranchesIn
   | SetTabOrderIn
+  | SetWorktreeOrderIn
   | SetSessionsCollapsedIn
   | SetReviewDiffStyleIn
   | SetDefaultBaseBranchIn
@@ -417,6 +491,10 @@ export type AgentManagerInMessage =
   | StopDiffWatchIn
   | OpenFileIn
   | GenericOpenFileIn
+  | PreviewImageIn
   | LoadMessagesIn
+  | SendMessageIn
+  | SendCommandIn
   | ClearSessionIn
   | AbortIn
+  | ContinueInWorktreeIn
