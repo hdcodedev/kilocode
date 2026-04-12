@@ -1,6 +1,5 @@
 import { MessageV2 } from "./message-v2"
 import { Log } from "@/util/log"
-import { Identifier } from "@/id/id"
 import { Session } from "."
 import { Agent } from "@/agent/agent"
 import { Snapshot } from "@/snapshot"
@@ -13,10 +12,13 @@ import type { Provider } from "@/provider/provider"
 import { LLM } from "./llm"
 import { Config } from "@/config/config"
 import { SessionCompaction } from "./compaction"
-import { PermissionNext } from "@/permission/next"
+import { Permission } from "@/permission"
 import { Question } from "@/question"
 import { Telemetry } from "@kilocode/kilo-telemetry" // kilocode_change
 import { Flag } from "@/flag/flag" // kilocode_change
+import { PartID } from "./schema"
+import type { SessionID, MessageID } from "./schema"
+import { SessionNetwork } from "./network" // kilocode_change
 
 export namespace SessionProcessor {
   const DOOM_LOOP_THRESHOLD = 3
@@ -27,7 +29,7 @@ export namespace SessionProcessor {
 
   export function create(input: {
     assistantMessage: MessageV2.Assistant
-    sessionID: string
+    sessionID: SessionID
     model: Provider.Model
     abort: AbortSignal
   }) {
@@ -59,7 +61,7 @@ export namespace SessionProcessor {
               input.abort.throwIfAborted()
               switch (value.type) {
                 case "start":
-                  SessionStatus.set(input.sessionID, { type: "busy" })
+                  await SessionStatus.set(input.sessionID, { type: "busy" })
                   break
 
                 case "reasoning-start":
@@ -67,7 +69,7 @@ export namespace SessionProcessor {
                     continue
                   }
                   const reasoningPart = {
-                    id: Identifier.ascending("part"),
+                    id: PartID.ascending(),
                     messageID: input.assistantMessage.id,
                     sessionID: input.assistantMessage.sessionID,
                     type: "reasoning" as const,
@@ -113,7 +115,7 @@ export namespace SessionProcessor {
 
                 case "tool-input-start":
                   const part = await Session.updatePart({
-                    id: toolcalls[value.id]?.id ?? Identifier.ascending("part"),
+                    id: toolcalls[value.id]?.id ?? PartID.ascending(),
                     messageID: input.assistantMessage.id,
                     sessionID: input.assistantMessage.sessionID,
                     type: "tool",
@@ -144,7 +146,7 @@ export namespace SessionProcessor {
                       toolName: value.toolName,
                     })
                     const created = await Session.updatePart({
-                      id: Identifier.ascending("part"),
+                      id: PartID.ascending(),
                       messageID: input.assistantMessage.id,
                       sessionID: input.assistantMessage.sessionID,
                       type: "tool",
@@ -189,7 +191,7 @@ export namespace SessionProcessor {
                       )
                     ) {
                       const agent = await Agent.get(input.assistantMessage.agent)
-                      await PermissionNext.ask({
+                      await Permission.ask({
                         permission: "doom_loop",
                         patterns: [value.toolName],
                         sessionID: input.assistantMessage.sessionID,
@@ -236,7 +238,7 @@ export namespace SessionProcessor {
                       state: {
                         status: "error",
                         input: value.input ?? match.state.input,
-                        error: (value.error as any).toString(),
+                        error: value.error instanceof Error ? value.error.message : String(value.error),
                         time: {
                           start: match.state.time.start,
                           end: Date.now(),
@@ -245,7 +247,7 @@ export namespace SessionProcessor {
                     })
 
                     if (
-                      value.error instanceof PermissionNext.RejectedError ||
+                      value.error instanceof Permission.RejectedError ||
                       value.error instanceof Question.RejectedError
                     ) {
                       blocked = shouldBreak
@@ -261,7 +263,7 @@ export namespace SessionProcessor {
                   stepStart = performance.now() // kilocode_change
                   snapshot = await Snapshot.track()
                   await Session.updatePart({
-                    id: Identifier.ascending("part"),
+                    id: PartID.ascending(),
                     messageID: input.assistantMessage.id,
                     sessionID: input.sessionID,
                     snapshot,
@@ -299,7 +301,7 @@ export namespace SessionProcessor {
                   input.assistantMessage.cost += usage.cost
                   input.assistantMessage.tokens = usage.tokens
                   await Session.updatePart({
-                    id: Identifier.ascending("part"),
+                    id: PartID.ascending(),
                     reason: value.finishReason,
                     snapshot: await Snapshot.track(),
                     messageID: input.assistantMessage.id,
@@ -313,7 +315,7 @@ export namespace SessionProcessor {
                     const patch = await Snapshot.patch(snapshot)
                     if (patch.files.length) {
                       await Session.updatePart({
-                        id: Identifier.ascending("part"),
+                        id: PartID.ascending(),
                         messageID: input.assistantMessage.id,
                         sessionID: input.sessionID,
                         type: "patch",
@@ -337,7 +339,7 @@ export namespace SessionProcessor {
 
                 case "text-start":
                   currentText = {
-                    id: Identifier.ascending("part"),
+                    id: PartID.ascending(),
                     messageID: input.assistantMessage.id,
                     sessionID: input.assistantMessage.sessionID,
                     type: "text",
@@ -403,7 +405,7 @@ export namespace SessionProcessor {
               error: e,
               stack: JSON.stringify(e.stack),
             })
-            const error = MessageV2.fromError(e, { providerID: input.model.providerID })
+            const error = MessageV2.fromError(e, { providerID: input.model.providerID, aborted: input.abort.aborted })
             if (MessageV2.ContextOverflowError.isInstance(error)) {
               needsCompaction = true
               Bus.publish(Session.Event.Error, {
@@ -412,35 +414,100 @@ export namespace SessionProcessor {
               })
             } else {
               const retry = SessionRetry.retryable(error)
-              if (
-                retry !== undefined &&
-                (Flag.KILO_SESSION_RETRY_LIMIT === undefined || attempt < Flag.KILO_SESSION_RETRY_LIMIT)
-              ) {
-                // kilocode_change
-                attempt++
-                const delay = SessionRetry.delay(attempt, error.name === "APIError" ? error : undefined)
-                SessionStatus.set(input.sessionID, {
-                  type: "retry",
-                  attempt,
-                  message: retry,
-                  next: Date.now() + delay,
+              // kilocode_change start - network disconnect detection and offline recovery
+              if (retry !== undefined) {
+                const offline = SessionNetwork.disconnected(e)
+                log.warn("retryable error", {
+                  sessionID: input.sessionID,
+                  name: e instanceof Error ? e.name : undefined,
+                  message: e instanceof Error ? e.message : String(e),
+                  code: SessionNetwork.code(e),
+                  offline,
+                  retry,
                 })
-                await SessionRetry.sleep(delay, input.abort).catch(() => {})
-                continue
+                if (offline) {
+                  const msg = SessionNetwork.message(e)
+                  const { id: requestID, promise: wait } = await SessionNetwork.ask({
+                    sessionID: input.sessionID,
+                    message: msg,
+                    abort: input.abort,
+                  })
+                  log.warn("session offline", {
+                    sessionID: input.sessionID,
+                    requestID,
+                    message: msg,
+                  })
+                  SessionStatus.set(input.sessionID, {
+                    type: "offline",
+                    requestID,
+                    message: msg,
+                  })
+                  let aborted = false
+                  await wait.catch((err) => {
+                    if (err instanceof SessionNetwork.RejectedError) {
+                      blocked = true
+                      return
+                    }
+                    if (err instanceof DOMException && err.name === "AbortError") {
+                      aborted = true
+                      return
+                    }
+                    throw err
+                  })
+                  if (aborted) {
+                    input.assistantMessage.error = MessageV2.fromError(new DOMException("Aborted", "AbortError"), {
+                      providerID: input.model.providerID,
+                    })
+                    SessionStatus.set(input.sessionID, { type: "idle" })
+                    break
+                  }
+                  if (blocked) {
+                    input.assistantMessage.error = error
+                    Bus.publish(Session.Event.Error, {
+                      sessionID: input.assistantMessage.sessionID,
+                      error,
+                    })
+                    SessionStatus.set(input.sessionID, { type: "idle" })
+                    break
+                  }
+                  attempt = 0
+                  SessionStatus.set(input.sessionID, { type: "retry", attempt: 1, message: retry, next: Date.now() })
+                  continue
+                }
+                if (Flag.KILO_SESSION_RETRY_LIMIT === undefined || attempt < Flag.KILO_SESSION_RETRY_LIMIT) {
+                  // kilocode_change
+                  attempt++
+                  const delay = SessionRetry.delay(attempt, error.name === "APIError" ? error : undefined)
+                  log.warn("retry scheduled", {
+                    sessionID: input.sessionID,
+                    attempt,
+                    delay,
+                    message: retry,
+                  })
+                  SessionStatus.set(input.sessionID, {
+                    type: "retry",
+                    attempt,
+                    message: retry,
+                    next: Date.now() + delay,
+                  })
+                  await SessionRetry.sleep(delay, input.abort).catch(() => {})
+                  continue
+                }
               }
+              // kilocode_change end
               input.assistantMessage.error = error
               Bus.publish(Session.Event.Error, {
                 sessionID: input.assistantMessage.sessionID,
                 error: input.assistantMessage.error,
               })
-              SessionStatus.set(input.sessionID, { type: "idle" })
+              await SessionStatus.set(input.sessionID, { type: "idle" })
             }
           }
           if (snapshot) {
             const patch = await Snapshot.patch(snapshot)
             if (patch.files.length) {
               await Session.updatePart({
-                id: Identifier.ascending("part"),
+                id: PartID.ascending(),
                 messageID: input.assistantMessage.id,
                 sessionID: input.sessionID,
                 type: "patch",

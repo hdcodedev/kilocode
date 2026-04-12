@@ -3,7 +3,11 @@ import { hideBin } from "yargs/helpers"
 import { RunCommand } from "./cli/cmd/run"
 import { GenerateCommand } from "./cli/cmd/generate"
 import { Log } from "./util/log"
-import { AuthCommand } from "./cli/cmd/auth"
+// kilocode_change start
+// import { LoginCommand, LogoutCommand, SwitchCommand, OrgsCommand } from "./cli/cmd/account"
+// import { ConsoleCommand } from "./cli/cmd/account"
+// kilocode_change end
+import { ProvidersCommand } from "./cli/cmd/providers"
 import { AgentCommand } from "./cli/cmd/agent"
 import { UpgradeCommand } from "./cli/cmd/upgrade"
 import { UninstallCommand } from "./cli/cmd/uninstall"
@@ -15,6 +19,7 @@ import { FormatError } from "./cli/error"
 import { ServeCommand } from "./cli/cmd/serve"
 import { WorkspaceServeCommand } from "./cli/cmd/workspace-serve"
 import { Filesystem } from "./util/filesystem"
+import { ConfigCommand as ConfigCLICommand } from "./cli/cmd/config" // kilocode_change
 import { DebugCommand } from "./cli/cmd/debug"
 import { StatsCommand } from "./cli/cmd/stats"
 import { McpCommand } from "./cli/cmd/mcp"
@@ -53,6 +58,7 @@ import { Auth } from "./auth"
 import { DbCommand } from "./cli/cmd/db"
 import path from "path"
 import { Global } from "./global"
+import { createHelpCommand } from "./kilocode/help-command" // kilocode_change
 import { JsonMigration } from "./storage/json-migration"
 import { Database } from "./storage/db"
 
@@ -67,11 +73,6 @@ process.on("uncaughtException", (e) => {
     e: e instanceof Error ? e.message : e,
   })
 })
-
-// Ensure the process exits on terminal hangup (eg. closing the terminal tab).
-// Without this, long-running commands like `serve` block on a never-resolving
-// promise and survive as orphaned processes.
-process.on("SIGHUP", () => process.exit())
 
 let cli = yargs(hideBin(process.argv))
   .parserConfiguration({ "populate--": true })
@@ -180,7 +181,14 @@ let cli = yargs(hideBin(process.argv))
   .command(RunCommand)
   .command(GenerateCommand)
   .command(DebugCommand)
-  .command(AuthCommand)
+  // kilocode_change start
+  // .command(LoginCommand)
+  // .command(LogoutCommand)
+  // .command(SwitchCommand)
+  // .command(OrgsCommand)
+  // .command(ConsoleCommand)
+  // kilocode_change end
+  .command(ProvidersCommand)
   .command(AgentCommand)
   .command(UpgradeCommand)
   .command(UninstallCommand)
@@ -195,6 +203,11 @@ let cli = yargs(hideBin(process.argv))
   .command(SessionCommand)
   .command(RemoteCommand) // kilocode_change
   .command(DbCommand)
+  .command(ConfigCLICommand) // kilocode_change
+
+// kilocode_change start - registered after initial chain to avoid self-referential type error
+cli = cli.command(createHelpCommand(() => cli))
+// kilocode_change end
 
 if (Installation.isLocal()) {
   cli = cli.command(WorkspaceServeCommand)

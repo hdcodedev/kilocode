@@ -78,6 +78,7 @@ import { Filesystem } from "@/util/filesystem"
 import { Global } from "@/global"
 import { PermissionPrompt } from "./permission"
 import { QuestionPrompt } from "./question"
+import { NetworkPrompt } from "./network" // kilocode_change
 import { DialogExportOptions } from "../../ui/dialog-export-options"
 import { formatTranscript } from "../../util/transcript"
 import { UI } from "@/cli/ui.ts"
@@ -141,6 +142,12 @@ export function Session() {
     if (session()?.parentID) return []
     return children().flatMap((x) => sync.data.question[x.id] ?? [])
   })
+  // kilocode_change start
+  const network = createMemo(() => {
+    if (session()?.parentID) return []
+    return children().flatMap((x) => sync.data.network[x.id] ?? [])
+  })
+  // kilocode_change end
 
   const pending = createMemo(() => {
     return messages().findLast((x) => x.role === "assistant" && !x.time.completed)?.id
@@ -175,6 +182,15 @@ export function Session() {
   createEffect(
     on(
       () => [route.sessionID, questions().length] as const,
+      ([id, len], prev) => {
+        if (!prev || prev[0] !== id) return
+        if (len > prev[1] && bellEnabled()) bell()
+      },
+    ),
+  )
+  createEffect(
+    on(
+      () => [route.sessionID, network().length] as const,
       ([id, len], prev) => {
         if (!prev || prev[0] !== id) return
         if (len > prev[1] && bellEnabled()) bell()
@@ -424,7 +440,12 @@ export function Session() {
             sessionID: route.sessionID,
           })
           .then((res) => copy(res.data!.share!.url))
-          .catch(() => toast.show({ message: "Failed to share session", variant: "error" }))
+          .catch((error) => {
+            toast.show({
+              message: error instanceof Error ? error.message : "Failed to share session",
+              variant: "error",
+            })
+          })
         dialog.clear()
       },
     },
@@ -527,7 +548,12 @@ export function Session() {
             sessionID: route.sessionID,
           })
           .then(() => toast.show({ message: "Session unshared successfully", variant: "success" }))
-          .catch(() => toast.show({ message: "Failed to unshare session", variant: "error" }))
+          .catch((error) => {
+            toast.show({
+              message: error instanceof Error ? error.message : "Failed to unshare session",
+              variant: "error",
+            })
+          })
         dialog.clear()
       },
     },
@@ -938,12 +964,12 @@ export function Session() {
             const filename = options.filename.trim()
             const filepath = path.join(exportDir, filename)
 
-            await Bun.write(filepath, transcript)
+            await Filesystem.write(filepath, transcript)
 
             // Open with EDITOR if available
             const result = await Editor.open({ value: transcript, renderer })
             if (result !== undefined) {
-              await Bun.write(filepath, result)
+              await Filesystem.write(filepath, result)
             }
 
             toast.show({ message: `Session exported to ${filename}`, variant: "success" })
@@ -1203,8 +1229,19 @@ export function Session() {
               <Show when={permissions().length === 0 && questions().length > 0}>
                 <QuestionPrompt request={questions()[0]} />
               </Show>
+              {/* kilocode_change start */}
+              <Show when={permissions().length === 0 && questions().length === 0 && network().length > 0}>
+                <NetworkPrompt request={network()[0]} />
+              </Show>
+              {/* kilocode_change end */}
+              {/* kilocode_change start */}
               <Prompt
-                visible={!session()?.parentID && permissions().length === 0 && questions().length === 0}
+                visible={
+                  !session()?.parentID &&
+                  permissions().length === 0 &&
+                  questions().length === 0 &&
+                  network().length === 0
+                } // kilocode_change end
                 ref={(r) => {
                   prompt = r
                   promptRef.set(r)
@@ -1213,7 +1250,7 @@ export function Session() {
                     r.set(route.initialPrompt)
                   }
                 }}
-                disabled={permissions().length > 0 || questions().length > 0}
+                disabled={permissions().length > 0 || questions().length > 0 || network().length > 0} // kilocode_change
                 onSubmit={() => {
                   toBottom()
                 }}
@@ -1508,6 +1545,8 @@ function TextPart(props: { last: boolean; part: TextPart; message: AssistantMess
               streaming={true}
               content={props.part.text.trim()}
               conceal={ctx.conceal()}
+              fg={theme.markdownText}
+              bg={theme.background}
             />
           </Match>
           <Match when={!Flag.KILO_EXPERIMENTAL_MARKDOWN}>
@@ -1710,6 +1749,7 @@ function InlineTool(props: {
 
   const denied = createMemo(
     () =>
+      error()?.includes("QuestionRejectedError") ||
       error()?.includes("rejected permission") ||
       error()?.includes("specified a rule") ||
       error()?.includes("user dismissed"),

@@ -27,10 +27,7 @@
                       "type": "string"
                     }
                   },
-                  "required": [
-                    "healthy",
-                    "version"
-                  ]
+                  "required": ["healthy", "version"]
                 }
               }
             }
@@ -157,6 +154,82 @@
           {
             "lang": "js",
             "source": "import { createKiloClient } from \"@kilocode/sdk\n\nconst client = createKiloClient()\nawait client.global.dispose({\n  ...\n})"
+          }
+        ]
+      }
+    },
+    "/global/upgrade": {
+      "post": {
+        "operationId": "global.upgrade",
+        "summary": "Upgrade kilo",
+        "description": "Upgrade kilo to the specified version or latest if not specified.",
+        "responses": {
+          "200": {
+            "description": "Upgrade result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "success": {
+                          "type": "boolean",
+                          "const": true
+                        },
+                        "version": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["success", "version"]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "success": {
+                          "type": "boolean",
+                          "const": false
+                        },
+                        "error": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["success", "error"]
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequestError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "target": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createKiloClient } from \"@kilocode/sdk\n\nconst client = createKiloClient()\nawait client.global.upgrade({\n  ...\n})"
           }
         ]
       }
@@ -640,7 +713,8 @@
             "in": "path",
             "name": "ptyID",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "pattern": "^pty.*"
             },
             "required": true
           }
@@ -697,7 +771,8 @@
             "in": "path",
             "name": "ptyID",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "pattern": "^pty.*"
             },
             "required": true
           }
@@ -745,10 +820,7 @@
                         "type": "number"
                       }
                     },
-                    "required": [
-                      "rows",
-                      "cols"
-                    ]
+                    "required": ["rows", "cols"]
                   }
                 }
               }
@@ -783,7 +855,8 @@
             "in": "path",
             "name": "ptyID",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "pattern": "^pty.*"
             },
             "required": true
           }
@@ -842,7 +915,8 @@
             "in": "path",
             "name": "ptyID",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "pattern": "^pty.*"
             },
             "required": true
           }
@@ -978,6 +1052,62 @@
         ]
       }
     },
+    "/config/warnings": {
+      "get": {
+        "operationId": "config.warnings",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "directory",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "workspace",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "summary": "Get config warnings",
+        "description": "Get warnings generated during config loading (e.g., invalid JSON, schema errors).",
+        "responses": {
+          "200": {
+            "description": "Config warnings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "path": {
+                        "type": "string"
+                      },
+                      "message": {
+                        "type": "string"
+                      },
+                      "detail": {
+                        "type": "string"
+                      }
+                    },
+                    "required": ["path", "message"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createKiloClient } from \"@kilocode/sdk\n\nconst client = createKiloClient()\nawait client.config.warnings({\n  ...\n})"
+          }
+        ]
+      }
+    },
     "/config/providers": {
       "get": {
         "operationId": "config.providers",
@@ -1023,10 +1153,7 @@
                       }
                     }
                   },
-                  "required": [
-                    "providers",
-                    "default"
-                  ]
+                  "required": ["providers", "default"]
                 }
               }
             }
@@ -1233,11 +1360,7 @@
                     ]
                   }
                 },
-                "required": [
-                  "type",
-                  "branch",
-                  "extra"
-                ]
+                "required": ["type", "branch", "extra"]
               }
             }
           }
@@ -1792,6 +1915,22 @@
           },
           {
             "in": "query",
+            "name": "projectID",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter sessions by project ID"
+          },
+          {
+            "in": "query",
+            "name": "worktrees",
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Restrict sessions to the current repo worktree family or current directory"
+          },
+          {
+            "in": "query",
             "name": "roots",
             "schema": {
               "type": "boolean"
@@ -2047,6 +2186,10 @@
                   },
                   "platform": {
                     "type": "string"
+                  },
+                  "workspaceID": {
+                    "type": "string",
+                    "pattern": "^wrk.*"
                   }
                 }
               }
@@ -2148,9 +2291,7 @@
         ],
         "summary": "Get session",
         "description": "Retrieve detailed information about a specific Kilo session.",
-        "tags": [
-          "Session"
-        ],
+        "tags": ["Session"],
         "responses": {
           "200": {
             "description": "Get session",
@@ -2279,7 +2420,8 @@
             "in": "path",
             "name": "sessionID",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "pattern": "^ses.*"
             },
             "required": true
           }
@@ -2377,9 +2519,7 @@
           }
         ],
         "summary": "Get session children",
-        "tags": [
-          "Session"
-        ],
+        "tags": ["Session"],
         "description": "Retrieve all child sessions that were forked from the specified parent session.",
         "responses": {
           "200": {
@@ -2446,10 +2586,10 @@
             "in": "path",
             "name": "sessionID",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "pattern": "^ses.*"
             },
-            "required": true,
-            "description": "Session ID"
+            "required": true
           }
         ],
         "summary": "Get session todos",
@@ -2519,10 +2659,10 @@
             "in": "path",
             "name": "sessionID",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "pattern": "^ses.*"
             },
-            "required": true,
-            "description": "Session ID"
+            "required": true
           }
         ],
         "summary": "Initialize session",
@@ -2576,11 +2716,7 @@
                     "pattern": "^msg.*"
                   }
                 },
-                "required": [
-                  "modelID",
-                  "providerID",
-                  "messageID"
-                ]
+                "required": ["modelID", "providerID", "messageID"]
               }
             }
           }
@@ -2680,7 +2816,8 @@
             "in": "path",
             "name": "sessionID",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "pattern": "^ses.*"
             },
             "required": true
           }
@@ -2749,7 +2886,8 @@
             "in": "path",
             "name": "sessionID",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "pattern": "^ses.*"
             },
             "required": true
           }
@@ -2947,10 +3085,10 @@
             "in": "path",
             "name": "sessionID",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "pattern": "^ses.*"
             },
-            "required": true,
-            "description": "Session ID"
+            "required": true
           }
         ],
         "summary": "Summarize session",
@@ -3004,10 +3142,7 @@
                     "type": "boolean"
                   }
                 },
-                "required": [
-                  "providerID",
-                  "modelID"
-                ]
+                "required": ["providerID", "modelID"]
               }
             }
           }
@@ -3042,16 +3177,26 @@
             "in": "path",
             "name": "sessionID",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "pattern": "^ses.*"
             },
-            "required": true,
-            "description": "Session ID"
+            "required": true
           },
           {
             "in": "query",
             "name": "limit",
             "schema": {
-              "type": "number"
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "description": "Maximum number of messages to return"
+          },
+          {
+            "in": "query",
+            "name": "before",
+            "schema": {
+              "type": "string"
             }
           }
         ],
@@ -3077,10 +3222,7 @@
                         }
                       }
                     },
-                    "required": [
-                      "info",
-                      "parts"
-                    ]
+                    "required": ["info", "parts"]
                   }
                 }
               }
@@ -3135,10 +3277,10 @@
             "in": "path",
             "name": "sessionID",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "pattern": "^ses.*"
             },
-            "required": true,
-            "description": "Session ID"
+            "required": true
           }
         ],
         "summary": "Send message",
@@ -3161,10 +3303,7 @@
                       }
                     }
                   },
-                  "required": [
-                    "info",
-                    "parts"
-                  ]
+                  "required": ["info", "parts"]
                 }
               }
             }
@@ -3210,10 +3349,7 @@
                         "type": "string"
                       }
                     },
-                    "required": [
-                      "providerID",
-                      "modelID"
-                    ]
+                    "required": ["providerID", "modelID"]
                   },
                   "agent": {
                     "type": "string"
@@ -3283,9 +3419,7 @@
                     }
                   }
                 },
-                "required": [
-                  "parts"
-                ]
+                "required": ["parts"]
               }
             }
           }
@@ -3320,19 +3454,19 @@
             "in": "path",
             "name": "sessionID",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "pattern": "^ses.*"
             },
-            "required": true,
-            "description": "Session ID"
+            "required": true
           },
           {
             "in": "path",
             "name": "messageID",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "pattern": "^msg.*"
             },
-            "required": true,
-            "description": "Message ID"
+            "required": true
           }
         ],
         "summary": "Get message",
@@ -3355,10 +3489,7 @@
                       }
                     }
                   },
-                  "required": [
-                    "info",
-                    "parts"
-                  ]
+                  "required": ["info", "parts"]
                 }
               }
             }
@@ -3412,19 +3543,19 @@
             "in": "path",
             "name": "sessionID",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "pattern": "^ses.*"
             },
-            "required": true,
-            "description": "Session ID"
+            "required": true
           },
           {
             "in": "path",
             "name": "messageID",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "pattern": "^msg.*"
             },
-            "required": true,
-            "description": "Message ID"
+            "required": true
           }
         ],
         "summary": "Delete message",
@@ -3491,28 +3622,28 @@
             "in": "path",
             "name": "sessionID",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "pattern": "^ses.*"
             },
-            "required": true,
-            "description": "Session ID"
+            "required": true
           },
           {
             "in": "path",
             "name": "messageID",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "pattern": "^msg.*"
             },
-            "required": true,
-            "description": "Message ID"
+            "required": true
           },
           {
             "in": "path",
             "name": "partID",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "pattern": "^prt.*"
             },
-            "required": true,
-            "description": "Part ID"
+            "required": true
           }
         ],
         "description": "Delete a part from a message",
@@ -3576,28 +3707,28 @@
             "in": "path",
             "name": "sessionID",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "pattern": "^ses.*"
             },
-            "required": true,
-            "description": "Session ID"
+            "required": true
           },
           {
             "in": "path",
             "name": "messageID",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "pattern": "^msg.*"
             },
-            "required": true,
-            "description": "Message ID"
+            "required": true
           },
           {
             "in": "path",
             "name": "partID",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "pattern": "^prt.*"
             },
-            "required": true,
-            "description": "Part ID"
+            "required": true
           }
         ],
         "description": "Update a part in a message",
@@ -3672,10 +3803,10 @@
             "in": "path",
             "name": "sessionID",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "pattern": "^ses.*"
             },
-            "required": true,
-            "description": "Session ID"
+            "required": true
           }
         ],
         "summary": "Send async message",
@@ -3725,10 +3856,7 @@
                         "type": "string"
                       }
                     },
-                    "required": [
-                      "providerID",
-                      "modelID"
-                    ]
+                    "required": ["providerID", "modelID"]
                   },
                   "agent": {
                     "type": "string"
@@ -3798,9 +3926,7 @@
                     }
                   }
                 },
-                "required": [
-                  "parts"
-                ]
+                "required": ["parts"]
               }
             }
           }
@@ -3835,10 +3961,10 @@
             "in": "path",
             "name": "sessionID",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "pattern": "^ses.*"
             },
-            "required": true,
-            "description": "Session ID"
+            "required": true
           }
         ],
         "summary": "Send command",
@@ -3861,10 +3987,7 @@
                       }
                     }
                   },
-                  "required": [
-                    "info",
-                    "parts"
-                  ]
+                  "required": ["info", "parts"]
                 }
               }
             }
@@ -3923,7 +4046,8 @@
                           "type": "object",
                           "properties": {
                             "id": {
-                              "type": "string"
+                              "type": "string",
+                              "pattern": "^prt.*"
                             },
                             "type": {
                               "type": "string",
@@ -3942,20 +4066,13 @@
                               "$ref": "#/components/schemas/FilePartSource"
                             }
                           },
-                          "required": [
-                            "type",
-                            "mime",
-                            "url"
-                          ]
+                          "required": ["type", "mime", "url"]
                         }
                       ]
                     }
                   }
                 },
-                "required": [
-                  "arguments",
-                  "command"
-                ]
+                "required": ["arguments", "command"]
               }
             }
           }
@@ -3990,10 +4107,10 @@
             "in": "path",
             "name": "sessionID",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "pattern": "^ses.*"
             },
-            "required": true,
-            "description": "Session ID"
+            "required": true
           }
         ],
         "summary": "Run shell command",
@@ -4049,19 +4166,13 @@
                         "type": "string"
                       }
                     },
-                    "required": [
-                      "providerID",
-                      "modelID"
-                    ]
+                    "required": ["providerID", "modelID"]
                   },
                   "command": {
                     "type": "string"
                   }
                 },
-                "required": [
-                  "agent",
-                  "command"
-                ]
+                "required": ["agent", "command"]
               }
             }
           }
@@ -4096,7 +4207,8 @@
             "in": "path",
             "name": "sessionID",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "pattern": "^ses.*"
             },
             "required": true
           }
@@ -4150,9 +4262,7 @@
                     "pattern": "^prt.*"
                   }
                 },
-                "required": [
-                  "messageID"
-                ]
+                "required": ["messageID"]
               }
             }
           }
@@ -4187,7 +4297,8 @@
             "in": "path",
             "name": "sessionID",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "pattern": "^ses.*"
             },
             "required": true
           }
@@ -4256,7 +4367,8 @@
             "in": "path",
             "name": "sessionID",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "pattern": "^ses.*"
             },
             "required": true
           },
@@ -4264,7 +4376,8 @@
             "in": "path",
             "name": "permissionID",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "pattern": "^per.*"
             },
             "required": true
           }
@@ -4312,16 +4425,10 @@
                 "properties": {
                   "response": {
                     "type": "string",
-                    "enum": [
-                      "once",
-                      "always",
-                      "reject"
-                    ]
+                    "enum": ["once", "always", "reject"]
                   }
                 },
-                "required": [
-                  "response"
-                ]
+                "required": ["response"]
               }
             }
           }
@@ -4353,11 +4460,11 @@
             }
           }
         ],
-        "summary": "Set viewed session",
-        "description": "Notify the server which session the user is currently viewing, or clear it.",
+        "summary": "Set viewed sessions",
+        "description": "Notify the server which sessions the user is currently viewing, or clear all.",
         "responses": {
           "200": {
-            "description": "Viewed session updated",
+            "description": "Viewed sessions updated",
             "content": {
               "application/json": {
                 "schema": {
@@ -4373,8 +4480,17 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "sessionID": {
-                    "type": "string"
+                  "focused": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "open": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
                   }
                 }
               }
@@ -4411,7 +4527,8 @@
             "in": "path",
             "name": "requestID",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "pattern": "^per.*"
             },
             "required": true
           }
@@ -4458,19 +4575,13 @@
                 "properties": {
                   "reply": {
                     "type": "string",
-                    "enum": [
-                      "once",
-                      "always",
-                      "reject"
-                    ]
+                    "enum": ["once", "always", "reject"]
                   },
                   "message": {
                     "type": "string"
                   }
                 },
-                "required": [
-                  "reply"
-                ]
+                "required": ["reply"]
               }
             }
           }
@@ -4505,7 +4616,8 @@
             "in": "path",
             "name": "requestID",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "pattern": "^per.*"
             },
             "required": true
           }
@@ -4619,6 +4731,88 @@
         ]
       }
     },
+    "/permission/allow-everything": {
+      "post": {
+        "operationId": "permission.allowEverything",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "directory",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "workspace",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "summary": "Allow everything",
+        "description": "Enable or disable allowing all permissions without prompts.",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequestError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "enable": {
+                    "type": "boolean"
+                  },
+                  "requestID": {
+                    "type": "string"
+                  },
+                  "sessionID": {
+                    "type": "string"
+                  }
+                },
+                "required": ["enable"]
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createKiloClient } from \"@kilocode/sdk\n\nconst client = createKiloClient()\nawait client.permission.allowEverything({\n  ...\n})"
+          }
+        ]
+      }
+    },
     "/question": {
       "get": {
         "operationId": "question.list",
@@ -4685,7 +4879,8 @@
             "in": "path",
             "name": "requestID",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "pattern": "^que.*"
             },
             "required": true
           }
@@ -4738,9 +4933,7 @@
                     }
                   }
                 },
-                "required": [
-                  "answers"
-                ]
+                "required": ["answers"]
               }
             }
           }
@@ -4775,7 +4968,8 @@
             "in": "path",
             "name": "requestID",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "pattern": "^que.*"
             },
             "required": true
           }
@@ -4818,6 +5012,188 @@
           {
             "lang": "js",
             "source": "import { createKiloClient } from \"@kilocode/sdk\n\nconst client = createKiloClient()\nawait client.question.reject({\n  ...\n})"
+          }
+        ]
+      }
+    },
+    "/network": {
+      "get": {
+        "operationId": "network.list",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "directory",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "workspace",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "summary": "List pending network waits",
+        "description": "Get all pending network reconnect requests across all sessions.",
+        "responses": {
+          "200": {
+            "description": "List of pending network reconnect requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SessionNetworkWait"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createKiloClient } from \"@kilocode/sdk\n\nconst client = createKiloClient()\nawait client.network.list({\n  ...\n})"
+          }
+        ]
+      }
+    },
+    "/network/{requestID}/reply": {
+      "post": {
+        "operationId": "network.reply",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "directory",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "workspace",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "requestID",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "summary": "Resume after network wait",
+        "description": "Resume a pending session after reconnecting network-dependent services.",
+        "responses": {
+          "200": {
+            "description": "Network wait resumed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequestError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundError"
+                }
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createKiloClient } from \"@kilocode/sdk\n\nconst client = createKiloClient()\nawait client.network.reply({\n  ...\n})"
+          }
+        ]
+      }
+    },
+    "/network/{requestID}/reject": {
+      "post": {
+        "operationId": "network.reject",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "directory",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "workspace",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "requestID",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "summary": "Reject network resume request",
+        "description": "Stop a pending session instead of resuming after network reconnect.",
+        "responses": {
+          "200": {
+            "description": "Network wait rejected successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequestError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundError"
+                }
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createKiloClient } from \"@kilocode/sdk\n\nconst client = createKiloClient()\nawait client.network.reject({\n  ...\n})"
           }
         ]
       }
@@ -4917,15 +5293,10 @@
                                       "properties": {
                                         "field": {
                                           "type": "string",
-                                          "enum": [
-                                            "reasoning_content",
-                                            "reasoning_details"
-                                          ]
+                                          "enum": ["reasoning_content", "reasoning_details"]
                                         }
                                       },
-                                      "required": [
-                                        "field"
-                                      ],
+                                      "required": ["field"],
                                       "additionalProperties": false
                                     }
                                   ]
@@ -4961,16 +5332,10 @@
                                           "type": "number"
                                         }
                                       },
-                                      "required": [
-                                        "input",
-                                        "output"
-                                      ]
+                                      "required": ["input", "output"]
                                     }
                                   },
-                                  "required": [
-                                    "input",
-                                    "output"
-                                  ]
+                                  "required": ["input", "output"]
                                 },
                                 "limit": {
                                   "type": "object",
@@ -4985,10 +5350,7 @@
                                       "type": "number"
                                     }
                                   },
-                                  "required": [
-                                    "context",
-                                    "output"
-                                  ]
+                                  "required": ["context", "output"]
                                 },
                                 "modalities": {
                                   "type": "object",
@@ -4997,70 +5359,39 @@
                                       "type": "array",
                                       "items": {
                                         "type": "string",
-                                        "enum": [
-                                          "text",
-                                          "audio",
-                                          "image",
-                                          "video",
-                                          "pdf"
-                                        ]
+                                        "enum": ["text", "audio", "image", "video", "pdf"]
                                       }
                                     },
                                     "output": {
                                       "type": "array",
                                       "items": {
                                         "type": "string",
-                                        "enum": [
-                                          "text",
-                                          "audio",
-                                          "image",
-                                          "video",
-                                          "pdf"
-                                        ]
+                                        "enum": ["text", "audio", "image", "video", "pdf"]
                                       }
                                     }
                                   },
-                                  "required": [
-                                    "input",
-                                    "output"
-                                  ]
+                                  "required": ["input", "output"]
                                 },
                                 "recommendedIndex": {
                                   "type": "number"
                                 },
                                 "prompt": {
                                   "type": "string",
-                                  "enum": [
-                                    "codex",
-                                    "gemini",
-                                    "beast",
-                                    "anthropic",
-                                    "trinity",
-                                    "anthropic_without_todo"
-                                  ]
+                                  "enum": ["codex", "gemini", "beast", "anthropic", "trinity", "anthropic_without_todo"]
                                 },
                                 "isFree": {
                                   "type": "boolean"
                                 },
                                 "ai_sdk_provider": {
                                   "type": "string",
-                                  "enum": [
-                                    "anthropic",
-                                    "openai",
-                                    "openai-compatible",
-                                    "openrouter"
-                                  ]
+                                  "enum": ["anthropic", "openai", "openai-compatible", "openrouter"]
                                 },
                                 "experimental": {
                                   "type": "boolean"
                                 },
                                 "status": {
                                   "type": "string",
-                                  "enum": [
-                                    "alpha",
-                                    "beta",
-                                    "deprecated"
-                                  ]
+                                  "enum": ["alpha", "beta", "deprecated"]
                                 },
                                 "options": {
                                   "type": "object",
@@ -5117,12 +5448,7 @@
                             }
                           }
                         },
-                        "required": [
-                          "name",
-                          "env",
-                          "id",
-                          "models"
-                        ]
+                        "required": ["name", "env", "id", "models"]
                       }
                     },
                     "default": {
@@ -5141,11 +5467,7 @@
                       }
                     }
                   },
-                  "required": [
-                    "all",
-                    "default",
-                    "connected"
-                  ]
+                  "required": ["all", "default", "connected"]
                 }
               }
             }
@@ -5270,11 +5592,19 @@
                   "method": {
                     "description": "Auth method index",
                     "type": "number"
+                  },
+                  "inputs": {
+                    "description": "Prompt inputs",
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string"
+                    },
+                    "additionalProperties": {
+                      "type": "string"
+                    }
                   }
                 },
-                "required": [
-                  "method"
-                ]
+                "required": ["method"]
               }
             }
           }
@@ -5354,9 +5684,7 @@
                     "type": "string"
                   }
                 },
-                "required": [
-                  "method"
-                ]
+                "required": ["method"]
               }
             }
           }
@@ -5431,9 +5759,7 @@
                     "additionalProperties": {}
                   }
                 },
-                "required": [
-                  "event"
-                ]
+                "required": ["event"]
               }
             }
           }
@@ -5482,10 +5808,7 @@
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "enabled",
-                    "connected"
-                  ]
+                  "required": ["enabled", "connected"]
                 }
               }
             }
@@ -5535,10 +5858,7 @@
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "enabled",
-                    "connected"
-                  ]
+                  "required": ["enabled", "connected"]
                 }
               }
             }
@@ -5588,10 +5908,7 @@
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "enabled",
-                    "connected"
-                  ]
+                  "required": ["enabled", "connected"]
                 }
               }
             }
@@ -5638,9 +5955,7 @@
                       "type": "string"
                     }
                   },
-                  "required": [
-                    "message"
-                  ]
+                  "required": ["message"]
                 }
               }
             }
@@ -5678,9 +5993,7 @@
                     "type": "string"
                   }
                 },
-                "required": [
-                  "path"
-                ]
+                "required": ["path"]
               }
             }
           }
@@ -5726,9 +6039,7 @@
                       "type": "string"
                     }
                   },
-                  "required": [
-                    "text"
-                  ]
+                  "required": ["text"]
                 }
               }
             }
@@ -5756,9 +6067,7 @@
                     "minLength": 1
                   }
                 },
-                "required": [
-                  "text"
-                ]
+                "required": ["text"]
               }
             }
           }
@@ -5810,10 +6119,7 @@
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "ok",
-                    "id"
-                  ]
+                  "required": ["ok", "id"]
                 }
               }
             }
@@ -5877,13 +6183,7 @@
                     }
                   }
                 },
-                "required": [
-                  "id",
-                  "worktree",
-                  "timeCreated",
-                  "timeUpdated",
-                  "sandboxes"
-                ]
+                "required": ["id", "worktree", "timeCreated", "timeUpdated", "sandboxes"]
               }
             }
           }
@@ -5935,10 +6235,7 @@
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "ok",
-                    "id"
-                  ]
+                  "required": ["ok", "id"]
                 }
               }
             }
@@ -5965,6 +6262,9 @@
                   },
                   "projectID": {
                     "type": "string"
+                  },
+                  "force": {
+                    "type": "boolean"
                   },
                   "workspaceID": {
                     "type": "string"
@@ -6010,11 +6310,7 @@
                         }
                       }
                     },
-                    "required": [
-                      "additions",
-                      "deletions",
-                      "files"
-                    ]
+                    "required": ["additions", "deletions", "files"]
                   },
                   "revert": {
                     "type": "object",
@@ -6032,9 +6328,7 @@
                         "type": "string"
                       }
                     },
-                    "required": [
-                      "messageID"
-                    ]
+                    "required": ["messageID"]
                   },
                   "permission": {
                     "type": "object",
@@ -6056,16 +6350,7 @@
                     "type": "number"
                   }
                 },
-                "required": [
-                  "id",
-                  "projectID",
-                  "slug",
-                  "directory",
-                  "title",
-                  "version",
-                  "timeCreated",
-                  "timeUpdated"
-                ]
+                "required": ["id", "projectID", "slug", "directory", "title", "version", "timeCreated", "timeUpdated"]
               }
             }
           }
@@ -6117,10 +6402,7 @@
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "ok",
-                    "id"
-                  ]
+                  "required": ["ok", "id"]
                 }
               }
             }
@@ -6167,9 +6449,7 @@
                                 "type": "number"
                               }
                             },
-                            "required": [
-                              "created"
-                            ]
+                            "required": ["created"]
                           },
                           "agent": {
                             "type": "string"
@@ -6184,10 +6464,7 @@
                                 "type": "string"
                               }
                             },
-                            "required": [
-                              "providerID",
-                              "modelID"
-                            ]
+                            "required": ["providerID", "modelID"]
                           },
                           "tools": {
                             "type": "object",
@@ -6199,12 +6476,7 @@
                             }
                           }
                         },
-                        "required": [
-                          "role",
-                          "time",
-                          "agent",
-                          "model"
-                        ]
+                        "required": ["role", "time", "agent", "model"]
                       },
                       {
                         "type": "object",
@@ -6223,9 +6495,7 @@
                                 "type": "number"
                               }
                             },
-                            "required": [
-                              "created"
-                            ]
+                            "required": ["created"]
                           },
                           "parentID": {
                             "type": "string"
@@ -6252,10 +6522,7 @@
                                 "type": "string"
                               }
                             },
-                            "required": [
-                              "cwd",
-                              "root"
-                            ]
+                            "required": ["cwd", "root"]
                           },
                           "summary": {
                             "type": "boolean"
@@ -6288,18 +6555,10 @@
                                     "type": "number"
                                   }
                                 },
-                                "required": [
-                                  "read",
-                                  "write"
-                                ]
+                                "required": ["read", "write"]
                               }
                             },
-                            "required": [
-                              "input",
-                              "output",
-                              "reasoning",
-                              "cache"
-                            ]
+                            "required": ["input", "output", "reasoning", "cache"]
                           },
                           "structured": {},
                           "variant": {
@@ -6325,12 +6584,7 @@
                     ]
                   }
                 },
-                "required": [
-                  "id",
-                  "sessionID",
-                  "timeCreated",
-                  "data"
-                ]
+                "required": ["id", "sessionID", "timeCreated", "data"]
               }
             }
           }
@@ -6382,10 +6636,7 @@
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "ok",
-                    "id"
-                  ]
+                  "required": ["ok", "id"]
                 }
               }
             }
@@ -6447,9 +6698,7 @@
                                 "type": "number"
                               }
                             },
-                            "required": [
-                              "start"
-                            ]
+                            "required": ["start"]
                           },
                           "metadata": {
                             "type": "object",
@@ -6459,10 +6708,7 @@
                             "additionalProperties": {}
                           }
                         },
-                        "required": [
-                          "type",
-                          "text"
-                        ]
+                        "required": ["type", "text"]
                       },
                       {
                         "type": "object",
@@ -6491,16 +6737,10 @@
                                 "type": "number"
                               }
                             },
-                            "required": [
-                              "start"
-                            ]
+                            "required": ["start"]
                           }
                         },
-                        "required": [
-                          "type",
-                          "text",
-                          "time"
-                        ]
+                        "required": ["type", "text", "time"]
                       },
                       {
                         "type": "object",
@@ -6535,11 +6775,7 @@
                                     "type": "string"
                                   }
                                 },
-                                "required": [
-                                  "status",
-                                  "input",
-                                  "raw"
-                                ]
+                                "required": ["status", "input", "raw"]
                               },
                               {
                                 "type": "object",
@@ -6572,16 +6808,10 @@
                                         "type": "number"
                                       }
                                     },
-                                    "required": [
-                                      "start"
-                                    ]
+                                    "required": ["start"]
                                   }
                                 },
-                                "required": [
-                                  "status",
-                                  "input",
-                                  "time"
-                                ]
+                                "required": ["status", "input", "time"]
                               },
                               {
                                 "type": "object",
@@ -6623,20 +6853,10 @@
                                         "type": "number"
                                       }
                                     },
-                                    "required": [
-                                      "start",
-                                      "end"
-                                    ]
+                                    "required": ["start", "end"]
                                   }
                                 },
-                                "required": [
-                                  "status",
-                                  "input",
-                                  "output",
-                                  "title",
-                                  "metadata",
-                                  "time"
-                                ]
+                                "required": ["status", "input", "output", "title", "metadata", "time"]
                               },
                               {
                                 "type": "object",
@@ -6672,18 +6892,10 @@
                                         "type": "number"
                                       }
                                     },
-                                    "required": [
-                                      "start",
-                                      "end"
-                                    ]
+                                    "required": ["start", "end"]
                                   }
                                 },
-                                "required": [
-                                  "status",
-                                  "input",
-                                  "error",
-                                  "time"
-                                ]
+                                "required": ["status", "input", "error", "time"]
                               }
                             ]
                           },
@@ -6695,22 +6907,12 @@
                             "additionalProperties": {}
                           }
                         },
-                        "required": [
-                          "type",
-                          "callID",
-                          "tool",
-                          "state"
-                        ]
+                        "required": ["type", "callID", "tool", "state"]
                       }
                     ]
                   }
                 },
-                "required": [
-                  "id",
-                  "messageID",
-                  "sessionID",
-                  "data"
-                ]
+                "required": ["id", "messageID", "sessionID", "data"]
               }
             }
           }
@@ -6776,9 +6978,7 @@
                     "type": "string"
                   }
                 },
-                "required": [
-                  "location"
-                ]
+                "required": ["location"]
               }
             }
           }
@@ -6844,9 +7044,7 @@
                     "type": "string"
                   }
                 },
-                "required": [
-                  "name"
-                ]
+                "required": ["name"]
               }
             }
           }
@@ -6912,17 +7110,11 @@
                                 "type": "string"
                               }
                             },
-                            "required": [
-                              "id",
-                              "name",
-                              "role"
-                            ]
+                            "required": ["id", "name", "role"]
                           }
                         }
                       },
-                      "required": [
-                        "email"
-                      ]
+                      "required": ["email"]
                     },
                     "balance": {
                       "anyOf": [
@@ -6933,9 +7125,7 @@
                               "type": "number"
                             }
                           },
-                          "required": [
-                            "balance"
-                          ]
+                          "required": ["balance"]
                         },
                         {
                           "type": "null"
@@ -6953,11 +7143,7 @@
                       ]
                     }
                   },
-                  "required": [
-                    "profile",
-                    "balance",
-                    "currentOrgId"
-                  ]
+                  "required": ["profile", "balance", "currentOrgId"]
                 }
               }
             }
@@ -7041,9 +7227,7 @@
                     ]
                   }
                 },
-                "required": [
-                  "organizationId"
-                ]
+                "required": ["organizationId"]
               }
             }
           }
@@ -7171,9 +7355,7 @@
                       }
                     }
                   },
-                  "required": [
-                    "modes"
-                  ]
+                  "required": ["modes"]
                 }
               }
             }
@@ -7284,10 +7466,7 @@
                     "type": "number"
                   }
                 },
-                "required": [
-                  "prefix",
-                  "suffix"
-                ]
+                "required": ["prefix", "suffix"]
               }
             }
           }
@@ -7350,10 +7529,7 @@
                             "type": "string"
                           }
                         },
-                        "required": [
-                          "actionText",
-                          "actionURL"
-                        ]
+                        "required": ["actionText", "actionURL"]
                       },
                       "showIn": {
                         "type": "array",
@@ -7365,11 +7541,7 @@
                         "type": "string"
                       }
                     },
-                    "required": [
-                      "id",
-                      "title",
-                      "message"
-                    ]
+                    "required": ["id", "title", "message"]
                   }
                 }
               }
@@ -7512,9 +7684,7 @@
                     "type": "string"
                   }
                 },
-                "required": [
-                  "sessionId"
-                ]
+                "required": ["sessionId"]
               }
             }
           }
@@ -7560,14 +7730,7 @@
                       "anyOf": [
                         {
                           "type": "string",
-                          "enum": [
-                            "provisioned",
-                            "starting",
-                            "restarting",
-                            "running",
-                            "stopped",
-                            "destroying"
-                          ]
+                          "enum": ["provisioned", "starting", "restarting", "running", "stopped", "destroying"]
                         },
                         {
                           "type": "null"
@@ -7590,10 +7753,7 @@
                           "type": "number"
                         }
                       },
-                      "required": [
-                        "cpus",
-                        "memory_mb"
-                      ]
+                      "required": ["cpus", "memory_mb"]
                     },
                     "openclawVersion": {
                       "anyOf": [
@@ -7635,9 +7795,7 @@
                       "type": "string"
                     }
                   },
-                  "required": [
-                    "status"
-                  ]
+                  "required": ["status"]
                 }
               }
             }
@@ -7695,12 +7853,7 @@
                           "type": "string"
                         }
                       },
-                      "required": [
-                        "apiKey",
-                        "userId",
-                        "userToken",
-                        "channelId"
-                      ]
+                      "required": ["apiKey", "userId", "userToken", "channelId"]
                     },
                     {
                       "type": "null"
@@ -7797,13 +7950,7 @@
                             "type": "number"
                           }
                         },
-                        "required": [
-                          "session_id",
-                          "title",
-                          "created_at",
-                          "updated_at",
-                          "version"
-                        ]
+                        "required": ["session_id", "title", "created_at", "updated_at", "version"]
                       }
                     },
                     "nextCursor": {
@@ -7817,10 +7964,7 @@
                       ]
                     }
                   },
-                  "required": [
-                    "cliSessions",
-                    "nextCursor"
-                  ]
+                  "required": ["cliSessions", "nextCursor"]
                 }
               }
             }
@@ -7890,9 +8034,7 @@
                             "type": "string"
                           }
                         },
-                        "required": [
-                          "text"
-                        ]
+                        "required": ["text"]
                       },
                       "lines": {
                         "type": "object",
@@ -7901,9 +8043,7 @@
                             "type": "string"
                           }
                         },
-                        "required": [
-                          "text"
-                        ]
+                        "required": ["text"]
                       },
                       "line_number": {
                         "type": "number"
@@ -7923,9 +8063,7 @@
                                   "type": "string"
                                 }
                               },
-                              "required": [
-                                "text"
-                              ]
+                              "required": ["text"]
                             },
                             "start": {
                               "type": "number"
@@ -7934,21 +8072,11 @@
                               "type": "number"
                             }
                           },
-                          "required": [
-                            "match",
-                            "start",
-                            "end"
-                          ]
+                          "required": ["match", "start", "end"]
                         }
                       }
                     },
-                    "required": [
-                      "path",
-                      "lines",
-                      "line_number",
-                      "absolute_offset",
-                      "submatches"
-                    ]
+                    "required": ["path", "lines", "line_number", "absolute_offset", "submatches"]
                   }
                 }
               }
@@ -7994,10 +8122,7 @@
             "name": "dirs",
             "schema": {
               "type": "string",
-              "enum": [
-                "true",
-                "false"
-              ]
+              "enum": ["true", "false"]
             }
           },
           {
@@ -8005,10 +8130,7 @@
             "name": "type",
             "schema": {
               "type": "string",
-              "enum": [
-                "file",
-                "directory"
-              ]
+              "enum": ["file", "directory"]
             }
           },
           {
@@ -8243,6 +8365,47 @@
         ]
       }
     },
+    "/event": {
+      "get": {
+        "operationId": "event.subscribe",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "directory",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "workspace",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "summary": "Subscribe to events",
+        "description": "Get events",
+        "responses": {
+          "200": {
+            "description": "Event stream",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/Event"
+                }
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createKiloClient } from \"@kilocode/sdk\n\nconst client = createKiloClient()\nawait client.event.subscribe({\n  ...\n})"
+          }
+        ]
+      }
+    },
     "/mcp": {
       "get": {
         "operationId": "mcp.status",
@@ -8357,10 +8520,7 @@
                     ]
                   }
                 },
-                "required": [
-                  "name",
-                  "config"
-                ]
+                "required": ["name", "config"]
               }
             }
           }
@@ -8415,9 +8575,7 @@
                       "type": "string"
                     }
                   },
-                  "required": [
-                    "authorizationUrl"
-                  ]
+                  "required": ["authorizationUrl"]
                 }
               }
             }
@@ -8491,9 +8649,7 @@
                       "const": true
                     }
                   },
-                  "required": [
-                    "success"
-                  ]
+                  "required": ["success"]
                 }
               }
             }
@@ -8589,9 +8745,7 @@
                     "type": "string"
                   }
                 },
-                "required": [
-                  "code"
-                ]
+                "required": ["code"]
               }
             }
           }
@@ -8822,9 +8976,7 @@
                     "type": "string"
                   }
                 },
-                "required": [
-                  "text"
-                ]
+                "required": ["text"]
               }
             }
           }
@@ -9136,9 +9288,7 @@
                     "type": "string"
                   }
                 },
-                "required": [
-                  "command"
-                ]
+                "required": ["command"]
               }
             }
           }
@@ -9198,12 +9348,7 @@
                   },
                   "variant": {
                     "type": "string",
-                    "enum": [
-                      "info",
-                      "success",
-                      "warning",
-                      "error"
-                    ]
+                    "enum": ["info", "success", "warning", "error"]
                   },
                   "duration": {
                     "description": "Duration in milliseconds",
@@ -9211,10 +9356,7 @@
                     "type": "number"
                   }
                 },
-                "required": [
-                  "message",
-                  "variant"
-                ]
+                "required": ["message", "variant"]
               }
             }
           }
@@ -9362,12 +9504,10 @@
                   "sessionID": {
                     "description": "Session ID to navigate to",
                     "type": "string",
-                    "pattern": "^ses"
+                    "pattern": "^ses.*"
                   }
                 },
-                "required": [
-                  "sessionID"
-                ]
+                "required": ["sessionID"]
               }
             }
           }
@@ -9414,10 +9554,7 @@
                     },
                     "body": {}
                   },
-                  "required": [
-                    "path",
-                    "body"
-                  ]
+                  "required": ["path", "body"]
                 }
               }
             }
@@ -9702,12 +9839,7 @@
                   "level": {
                     "description": "Log level",
                     "type": "string",
-                    "enum": [
-                      "debug",
-                      "info",
-                      "error",
-                      "warn"
-                    ]
+                    "enum": ["debug", "info", "error", "warn"]
                   },
                   "message": {
                     "description": "Log message",
@@ -9722,11 +9854,7 @@
                     "additionalProperties": {}
                   }
                 },
-                "required": [
-                  "service",
-                  "level",
-                  "message"
-                ]
+                "required": ["service", "level", "message"]
               }
             }
           }
@@ -9827,12 +9955,7 @@
                         "type": "string"
                       }
                     },
-                    "required": [
-                      "name",
-                      "description",
-                      "location",
-                      "content"
-                    ]
+                    "required": ["name", "description", "location", "content"]
                   }
                 }
               }
@@ -9934,47 +10057,6 @@
           }
         ]
       }
-    },
-    "/event": {
-      "get": {
-        "operationId": "event.subscribe",
-        "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "workspace",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "summary": "Subscribe to events",
-        "description": "Get events",
-        "responses": {
-          "200": {
-            "description": "Event stream",
-            "content": {
-              "text/event-stream": {
-                "schema": {
-                  "$ref": "#/components/schemas/Event"
-                }
-              }
-            }
-          }
-        },
-        "x-codeSamples": [
-          {
-            "lang": "js",
-            "source": "import { createKiloClient } from \"@kilocode/sdk\n\nconst client = createKiloClient()\nawait client.event.subscribe({\n  ...\n})"
-          }
-        ]
-      }
     }
   },
   "components": {
@@ -9993,15 +10075,10 @@
                 "type": "string"
               }
             },
-            "required": [
-              "version"
-            ]
+            "required": ["version"]
           }
         },
-        "required": [
-          "type",
-          "properties"
-        ]
+        "required": ["type", "properties"]
       },
       "Event.installation.update-available": {
         "type": "object",
@@ -10017,15 +10094,10 @@
                 "type": "string"
               }
             },
-            "required": [
-              "version"
-            ]
+            "required": ["version"]
           }
         },
-        "required": [
-          "type",
-          "properties"
-        ]
+        "required": ["type", "properties"]
       },
       "Project": {
         "type": "object",
@@ -10079,10 +10151,7 @@
                 "type": "number"
               }
             },
-            "required": [
-              "created",
-              "updated"
-            ]
+            "required": ["created", "updated"]
           },
           "sandboxes": {
             "type": "array",
@@ -10091,12 +10160,7 @@
             }
           }
         },
-        "required": [
-          "id",
-          "worktree",
-          "time",
-          "sandboxes"
-        ]
+        "required": ["id", "worktree", "time", "sandboxes"]
       },
       "Event.project.updated": {
         "type": "object",
@@ -10109,10 +10173,7 @@
             "$ref": "#/components/schemas/Project"
           }
         },
-        "required": [
-          "type",
-          "properties"
-        ]
+        "required": ["type", "properties"]
       },
       "Event.server.instance.disposed": {
         "type": "object",
@@ -10128,15 +10189,10 @@
                 "type": "string"
               }
             },
-            "required": [
-              "directory"
-            ]
+            "required": ["directory"]
           }
         },
-        "required": [
-          "type",
-          "properties"
-        ]
+        "required": ["type", "properties"]
       },
       "Event.server.connected": {
         "type": "object",
@@ -10150,10 +10206,7 @@
             "properties": {}
           }
         },
-        "required": [
-          "type",
-          "properties"
-        ]
+        "required": ["type", "properties"]
       },
       "Event.global.disposed": {
         "type": "object",
@@ -10167,10 +10220,7 @@
             "properties": {}
           }
         },
-        "required": [
-          "type",
-          "properties"
-        ]
+        "required": ["type", "properties"]
       },
       "Event.global.config.updated": {
         "type": "object",
@@ -10184,10 +10234,7 @@
             "properties": {}
           }
         },
-        "required": [
-          "type",
-          "properties"
-        ]
+        "required": ["type", "properties"]
       },
       "Event.lsp.client.diagnostics": {
         "type": "object",
@@ -10206,16 +10253,10 @@
                 "type": "string"
               }
             },
-            "required": [
-              "serverID",
-              "path"
-            ]
+            "required": ["serverID", "path"]
           }
         },
-        "required": [
-          "type",
-          "properties"
-        ]
+        "required": ["type", "properties"]
       },
       "Event.lsp.updated": {
         "type": "object",
@@ -10229,10 +10270,7 @@
             "properties": {}
           }
         },
-        "required": [
-          "type",
-          "properties"
-        ]
+        "required": ["type", "properties"]
       },
       "Event.file.edited": {
         "type": "object",
@@ -10248,15 +10286,274 @@
                 "type": "string"
               }
             },
-            "required": [
-              "file"
-            ]
+            "required": ["file"]
           }
         },
-        "required": [
-          "type",
-          "properties"
-        ]
+        "required": ["type", "properties"]
+      },
+      "Event.tui.prompt.append": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "tui.prompt.append"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "text": {
+                "type": "string"
+              }
+            },
+            "required": ["text"]
+          }
+        },
+        "required": ["type", "properties"]
+      },
+      "Event.tui.command.execute": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "tui.command.execute"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "session.list",
+                      "session.new",
+                      "session.share",
+                      "session.interrupt",
+                      "session.compact",
+                      "session.page.up",
+                      "session.page.down",
+                      "session.line.up",
+                      "session.line.down",
+                      "session.half.page.up",
+                      "session.half.page.down",
+                      "session.first",
+                      "session.last",
+                      "prompt.clear",
+                      "prompt.submit",
+                      "agent.cycle"
+                    ]
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              }
+            },
+            "required": ["command"]
+          }
+        },
+        "required": ["type", "properties"]
+      },
+      "Event.tui.toast.show": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "tui.toast.show"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              },
+              "variant": {
+                "type": "string",
+                "enum": ["info", "success", "warning", "error"]
+              },
+              "duration": {
+                "description": "Duration in milliseconds",
+                "default": 5000,
+                "type": "number"
+              }
+            },
+            "required": ["message", "variant"]
+          }
+        },
+        "required": ["type", "properties"]
+      },
+      "Event.tui.session.select": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "tui.session.select"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "sessionID": {
+                "description": "Session ID to navigate to",
+                "type": "string",
+                "pattern": "^ses.*"
+              }
+            },
+            "required": ["sessionID"]
+          }
+        },
+        "required": ["type", "properties"]
+      },
+      "Event.mcp.tools.changed": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "mcp.tools.changed"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "server": {
+                "type": "string"
+              }
+            },
+            "required": ["server"]
+          }
+        },
+        "required": ["type", "properties"]
+      },
+      "Event.mcp.browser.open.failed": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "mcp.browser.open.failed"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "mcpName": {
+                "type": "string"
+              },
+              "url": {
+                "type": "string"
+              }
+            },
+            "required": ["mcpName", "url"]
+          }
+        },
+        "required": ["type", "properties"]
+      },
+      "SessionNetworkWait": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^que.*"
+          },
+          "sessionID": {
+            "type": "string",
+            "pattern": "^ses.*"
+          },
+          "message": {
+            "type": "string"
+          },
+          "restored": {
+            "type": "boolean"
+          },
+          "time": {
+            "type": "object",
+            "properties": {
+              "created": {
+                "type": "number"
+              }
+            },
+            "required": ["created"]
+          }
+        },
+        "required": ["id", "sessionID", "message", "restored", "time"]
+      },
+      "Event.session.network.asked": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "session.network.asked"
+          },
+          "properties": {
+            "$ref": "#/components/schemas/SessionNetworkWait"
+          }
+        },
+        "required": ["type", "properties"]
+      },
+      "Event.session.network.replied": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "session.network.replied"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "sessionID": {
+                "type": "string"
+              },
+              "requestID": {
+                "type": "string"
+              }
+            },
+            "required": ["sessionID", "requestID"]
+          }
+        },
+        "required": ["type", "properties"]
+      },
+      "Event.session.network.rejected": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "session.network.rejected"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "sessionID": {
+                "type": "string"
+              },
+              "requestID": {
+                "type": "string"
+              }
+            },
+            "required": ["sessionID", "requestID"]
+          }
+        },
+        "required": ["type", "properties"]
+      },
+      "Event.session.network.restored": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "session.network.restored"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "sessionID": {
+                "type": "string"
+              },
+              "requestID": {
+                "type": "string"
+              }
+            },
+            "required": ["sessionID", "requestID"]
+          }
+        },
+        "required": ["type", "properties"]
       },
       "OutputFormatText": {
         "type": "object",
@@ -10266,9 +10563,7 @@
             "const": "text"
           }
         },
-        "required": [
-          "type"
-        ]
+        "required": ["type"]
       },
       "JSONSchema": {
         "type": "object",
@@ -10294,10 +10589,7 @@
             "maximum": 9007199254740991
           }
         },
-        "required": [
-          "type",
-          "schema"
-        ]
+        "required": ["type", "schema"]
       },
       "OutputFormat": {
         "anyOf": [
@@ -10329,29 +10621,21 @@
           },
           "status": {
             "type": "string",
-            "enum": [
-              "added",
-              "deleted",
-              "modified"
-            ]
+            "enum": ["added", "deleted", "modified"]
           }
         },
-        "required": [
-          "file",
-          "before",
-          "after",
-          "additions",
-          "deletions"
-        ]
+        "required": ["file", "before", "after", "additions", "deletions"]
       },
       "UserMessage": {
         "type": "object",
         "properties": {
           "id": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^msg.*"
           },
           "sessionID": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^ses.*"
           },
           "role": {
             "type": "string",
@@ -10364,9 +10648,7 @@
                 "type": "number"
               }
             },
-            "required": [
-              "created"
-            ]
+            "required": ["created"]
           },
           "format": {
             "$ref": "#/components/schemas/OutputFormat"
@@ -10387,9 +10669,7 @@
                 }
               }
             },
-            "required": [
-              "diffs"
-            ]
+            "required": ["diffs"]
           },
           "agent": {
             "type": "string"
@@ -10404,10 +10684,7 @@
                 "type": "string"
               }
             },
-            "required": [
-              "providerID",
-              "modelID"
-            ]
+            "required": ["providerID", "modelID"]
           },
           "system": {
             "type": "string"
@@ -10448,14 +10725,7 @@
             }
           }
         },
-        "required": [
-          "id",
-          "sessionID",
-          "role",
-          "time",
-          "agent",
-          "model"
-        ]
+        "required": ["id", "sessionID", "role", "time", "agent", "model"]
       },
       "ProviderAuthError": {
         "type": "object",
@@ -10474,16 +10744,10 @@
                 "type": "string"
               }
             },
-            "required": [
-              "providerID",
-              "message"
-            ]
+            "required": ["providerID", "message"]
           }
         },
-        "required": [
-          "name",
-          "data"
-        ]
+        "required": ["name", "data"]
       },
       "UnknownError": {
         "type": "object",
@@ -10499,15 +10763,10 @@
                 "type": "string"
               }
             },
-            "required": [
-              "message"
-            ]
+            "required": ["message"]
           }
         },
-        "required": [
-          "name",
-          "data"
-        ]
+        "required": ["name", "data"]
       },
       "MessageOutputLengthError": {
         "type": "object",
@@ -10521,10 +10780,7 @@
             "properties": {}
           }
         },
-        "required": [
-          "name",
-          "data"
-        ]
+        "required": ["name", "data"]
       },
       "MessageAbortedError": {
         "type": "object",
@@ -10540,15 +10796,10 @@
                 "type": "string"
               }
             },
-            "required": [
-              "message"
-            ]
+            "required": ["message"]
           }
         },
-        "required": [
-          "name",
-          "data"
-        ]
+        "required": ["name", "data"]
       },
       "StructuredOutputError": {
         "type": "object",
@@ -10567,16 +10818,10 @@
                 "type": "number"
               }
             },
-            "required": [
-              "message",
-              "retries"
-            ]
+            "required": ["message", "retries"]
           }
         },
-        "required": [
-          "name",
-          "data"
-        ]
+        "required": ["name", "data"]
       },
       "ContextOverflowError": {
         "type": "object",
@@ -10595,15 +10840,10 @@
                 "type": "string"
               }
             },
-            "required": [
-              "message"
-            ]
+            "required": ["message"]
           }
         },
-        "required": [
-          "name",
-          "data"
-        ]
+        "required": ["name", "data"]
       },
       "APIError": {
         "type": "object",
@@ -10646,25 +10886,21 @@
                 }
               }
             },
-            "required": [
-              "message",
-              "isRetryable"
-            ]
+            "required": ["message", "isRetryable"]
           }
         },
-        "required": [
-          "name",
-          "data"
-        ]
+        "required": ["name", "data"]
       },
       "AssistantMessage": {
         "type": "object",
         "properties": {
           "id": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^msg.*"
           },
           "sessionID": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^ses.*"
           },
           "role": {
             "type": "string",
@@ -10680,9 +10916,7 @@
                 "type": "number"
               }
             },
-            "required": [
-              "created"
-            ]
+            "required": ["created"]
           },
           "error": {
             "anyOf": [
@@ -10710,7 +10944,8 @@
             ]
           },
           "parentID": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^msg.*"
           },
           "modelID": {
             "type": "string"
@@ -10734,10 +10969,7 @@
                 "type": "string"
               }
             },
-            "required": [
-              "cwd",
-              "root"
-            ]
+            "required": ["cwd", "root"]
           },
           "summary": {
             "type": "boolean"
@@ -10770,18 +11002,10 @@
                     "type": "number"
                   }
                 },
-                "required": [
-                  "read",
-                  "write"
-                ]
+                "required": ["read", "write"]
               }
             },
-            "required": [
-              "input",
-              "output",
-              "reasoning",
-              "cache"
-            ]
+            "required": ["input", "output", "reasoning", "cache"]
           },
           "structured": {},
           "variant": {
@@ -10830,15 +11054,10 @@
                 "$ref": "#/components/schemas/Message"
               }
             },
-            "required": [
-              "info"
-            ]
+            "required": ["info"]
           }
         },
-        "required": [
-          "type",
-          "properties"
-        ]
+        "required": ["type", "properties"]
       },
       "Event.message.removed": {
         "type": "object",
@@ -10851,34 +11070,33 @@
             "type": "object",
             "properties": {
               "sessionID": {
-                "type": "string"
+                "type": "string",
+                "pattern": "^ses.*"
               },
               "messageID": {
-                "type": "string"
+                "type": "string",
+                "pattern": "^msg.*"
               }
             },
-            "required": [
-              "sessionID",
-              "messageID"
-            ]
+            "required": ["sessionID", "messageID"]
           }
         },
-        "required": [
-          "type",
-          "properties"
-        ]
+        "required": ["type", "properties"]
       },
       "TextPart": {
         "type": "object",
         "properties": {
           "id": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^prt.*"
           },
           "sessionID": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^ses.*"
           },
           "messageID": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^msg.*"
           },
           "type": {
             "type": "string",
@@ -10903,9 +11121,7 @@
                 "type": "number"
               }
             },
-            "required": [
-              "start"
-            ]
+            "required": ["start"]
           },
           "metadata": {
             "type": "object",
@@ -10915,25 +11131,22 @@
             "additionalProperties": {}
           }
         },
-        "required": [
-          "id",
-          "sessionID",
-          "messageID",
-          "type",
-          "text"
-        ]
+        "required": ["id", "sessionID", "messageID", "type", "text"]
       },
       "SubtaskPart": {
         "type": "object",
         "properties": {
           "id": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^prt.*"
           },
           "sessionID": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^ses.*"
           },
           "messageID": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^msg.*"
           },
           "type": {
             "type": "string",
@@ -10958,36 +11171,28 @@
                 "type": "string"
               }
             },
-            "required": [
-              "providerID",
-              "modelID"
-            ]
+            "required": ["providerID", "modelID"]
           },
           "command": {
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "sessionID",
-          "messageID",
-          "type",
-          "prompt",
-          "description",
-          "agent"
-        ]
+        "required": ["id", "sessionID", "messageID", "type", "prompt", "description", "agent"]
       },
       "ReasoningPart": {
         "type": "object",
         "properties": {
           "id": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^prt.*"
           },
           "sessionID": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^ses.*"
           },
           "messageID": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^msg.*"
           },
           "type": {
             "type": "string",
@@ -11013,19 +11218,10 @@
                 "type": "number"
               }
             },
-            "required": [
-              "start"
-            ]
+            "required": ["start"]
           }
         },
-        "required": [
-          "id",
-          "sessionID",
-          "messageID",
-          "type",
-          "text",
-          "time"
-        ]
+        "required": ["id", "sessionID", "messageID", "type", "text", "time"]
       },
       "FilePartSourceText": {
         "type": "object",
@@ -11044,11 +11240,7 @@
             "maximum": 9007199254740991
           }
         },
-        "required": [
-          "value",
-          "start",
-          "end"
-        ]
+        "required": ["value", "start", "end"]
       },
       "FileSource": {
         "type": "object",
@@ -11064,11 +11256,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "text",
-          "type",
-          "path"
-        ]
+        "required": ["text", "type", "path"]
       },
       "Range": {
         "type": "object",
@@ -11083,10 +11271,7 @@
                 "type": "number"
               }
             },
-            "required": [
-              "line",
-              "character"
-            ]
+            "required": ["line", "character"]
           },
           "end": {
             "type": "object",
@@ -11098,16 +11283,10 @@
                 "type": "number"
               }
             },
-            "required": [
-              "line",
-              "character"
-            ]
+            "required": ["line", "character"]
           }
         },
-        "required": [
-          "start",
-          "end"
-        ]
+        "required": ["start", "end"]
       },
       "SymbolSource": {
         "type": "object",
@@ -11134,14 +11313,7 @@
             "maximum": 9007199254740991
           }
         },
-        "required": [
-          "text",
-          "type",
-          "path",
-          "range",
-          "name",
-          "kind"
-        ]
+        "required": ["text", "type", "path", "range", "name", "kind"]
       },
       "ResourceSource": {
         "type": "object",
@@ -11160,12 +11332,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "text",
-          "type",
-          "clientName",
-          "uri"
-        ]
+        "required": ["text", "type", "clientName", "uri"]
       },
       "FilePartSource": {
         "anyOf": [
@@ -11184,13 +11351,16 @@
         "type": "object",
         "properties": {
           "id": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^prt.*"
           },
           "sessionID": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^ses.*"
           },
           "messageID": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^msg.*"
           },
           "type": {
             "type": "string",
@@ -11209,14 +11379,7 @@
             "$ref": "#/components/schemas/FilePartSource"
           }
         },
-        "required": [
-          "id",
-          "sessionID",
-          "messageID",
-          "type",
-          "mime",
-          "url"
-        ]
+        "required": ["id", "sessionID", "messageID", "type", "mime", "url"]
       },
       "ToolStatePending": {
         "type": "object",
@@ -11236,11 +11399,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "status",
-          "input",
-          "raw"
-        ]
+        "required": ["status", "input", "raw"]
       },
       "ToolStateRunning": {
         "type": "object",
@@ -11273,16 +11432,10 @@
                 "type": "number"
               }
             },
-            "required": [
-              "start"
-            ]
+            "required": ["start"]
           }
         },
-        "required": [
-          "status",
-          "input",
-          "time"
-        ]
+        "required": ["status", "input", "time"]
       },
       "ToolStateCompleted": {
         "type": "object",
@@ -11324,10 +11477,7 @@
                 "type": "number"
               }
             },
-            "required": [
-              "start",
-              "end"
-            ]
+            "required": ["start", "end"]
           },
           "attachments": {
             "type": "array",
@@ -11336,14 +11486,7 @@
             }
           }
         },
-        "required": [
-          "status",
-          "input",
-          "output",
-          "title",
-          "metadata",
-          "time"
-        ]
+        "required": ["status", "input", "output", "title", "metadata", "time"]
       },
       "ToolStateError": {
         "type": "object",
@@ -11379,18 +11522,10 @@
                 "type": "number"
               }
             },
-            "required": [
-              "start",
-              "end"
-            ]
+            "required": ["start", "end"]
           }
         },
-        "required": [
-          "status",
-          "input",
-          "error",
-          "time"
-        ]
+        "required": ["status", "input", "error", "time"]
       },
       "ToolState": {
         "anyOf": [
@@ -11412,13 +11547,16 @@
         "type": "object",
         "properties": {
           "id": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^prt.*"
           },
           "sessionID": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^ses.*"
           },
           "messageID": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^msg.*"
           },
           "type": {
             "type": "string",
@@ -11441,27 +11579,22 @@
             "additionalProperties": {}
           }
         },
-        "required": [
-          "id",
-          "sessionID",
-          "messageID",
-          "type",
-          "callID",
-          "tool",
-          "state"
-        ]
+        "required": ["id", "sessionID", "messageID", "type", "callID", "tool", "state"]
       },
       "StepStartPart": {
         "type": "object",
         "properties": {
           "id": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^prt.*"
           },
           "sessionID": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^ses.*"
           },
           "messageID": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^msg.*"
           },
           "type": {
             "type": "string",
@@ -11471,24 +11604,22 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "sessionID",
-          "messageID",
-          "type"
-        ]
+        "required": ["id", "sessionID", "messageID", "type"]
       },
       "StepFinishPart": {
         "type": "object",
         "properties": {
           "id": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^prt.*"
           },
           "sessionID": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^ses.*"
           },
           "messageID": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^msg.*"
           },
           "type": {
             "type": "string",
@@ -11528,41 +11659,28 @@
                     "type": "number"
                   }
                 },
-                "required": [
-                  "read",
-                  "write"
-                ]
+                "required": ["read", "write"]
               }
             },
-            "required": [
-              "input",
-              "output",
-              "reasoning",
-              "cache"
-            ]
+            "required": ["input", "output", "reasoning", "cache"]
           }
         },
-        "required": [
-          "id",
-          "sessionID",
-          "messageID",
-          "type",
-          "reason",
-          "cost",
-          "tokens"
-        ]
+        "required": ["id", "sessionID", "messageID", "type", "reason", "cost", "tokens"]
       },
       "SnapshotPart": {
         "type": "object",
         "properties": {
           "id": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^prt.*"
           },
           "sessionID": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^ses.*"
           },
           "messageID": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^msg.*"
           },
           "type": {
             "type": "string",
@@ -11572,25 +11690,22 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "sessionID",
-          "messageID",
-          "type",
-          "snapshot"
-        ]
+        "required": ["id", "sessionID", "messageID", "type", "snapshot"]
       },
       "PatchPart": {
         "type": "object",
         "properties": {
           "id": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^prt.*"
           },
           "sessionID": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^ses.*"
           },
           "messageID": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^msg.*"
           },
           "type": {
             "type": "string",
@@ -11606,26 +11721,22 @@
             }
           }
         },
-        "required": [
-          "id",
-          "sessionID",
-          "messageID",
-          "type",
-          "hash",
-          "files"
-        ]
+        "required": ["id", "sessionID", "messageID", "type", "hash", "files"]
       },
       "AgentPart": {
         "type": "object",
         "properties": {
           "id": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^prt.*"
           },
           "sessionID": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^ses.*"
           },
           "messageID": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^msg.*"
           },
           "type": {
             "type": "string",
@@ -11651,32 +11762,25 @@
                 "maximum": 9007199254740991
               }
             },
-            "required": [
-              "value",
-              "start",
-              "end"
-            ]
+            "required": ["value", "start", "end"]
           }
         },
-        "required": [
-          "id",
-          "sessionID",
-          "messageID",
-          "type",
-          "name"
-        ]
+        "required": ["id", "sessionID", "messageID", "type", "name"]
       },
       "RetryPart": {
         "type": "object",
         "properties": {
           "id": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^prt.*"
           },
           "sessionID": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^ses.*"
           },
           "messageID": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^msg.*"
           },
           "type": {
             "type": "string",
@@ -11695,32 +11799,25 @@
                 "type": "number"
               }
             },
-            "required": [
-              "created"
-            ]
+            "required": ["created"]
           }
         },
-        "required": [
-          "id",
-          "sessionID",
-          "messageID",
-          "type",
-          "attempt",
-          "error",
-          "time"
-        ]
+        "required": ["id", "sessionID", "messageID", "type", "attempt", "error", "time"]
       },
       "CompactionPart": {
         "type": "object",
         "properties": {
           "id": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^prt.*"
           },
           "sessionID": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^ses.*"
           },
           "messageID": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^msg.*"
           },
           "type": {
             "type": "string",
@@ -11733,13 +11830,7 @@
             "type": "boolean"
           }
         },
-        "required": [
-          "id",
-          "sessionID",
-          "messageID",
-          "type",
-          "auto"
-        ]
+        "required": ["id", "sessionID", "messageID", "type", "auto"]
       },
       "Part": {
         "anyOf": [
@@ -11795,15 +11886,10 @@
                 "$ref": "#/components/schemas/Part"
               }
             },
-            "required": [
-              "part"
-            ]
+            "required": ["part"]
           }
         },
-        "required": [
-          "type",
-          "properties"
-        ]
+        "required": ["type", "properties"]
       },
       "Event.message.part.delta": {
         "type": "object",
@@ -11816,13 +11902,16 @@
             "type": "object",
             "properties": {
               "sessionID": {
-                "type": "string"
+                "type": "string",
+                "pattern": "^ses.*"
               },
               "messageID": {
-                "type": "string"
+                "type": "string",
+                "pattern": "^msg.*"
               },
               "partID": {
-                "type": "string"
+                "type": "string",
+                "pattern": "^prt.*"
               },
               "field": {
                 "type": "string"
@@ -11831,19 +11920,10 @@
                 "type": "string"
               }
             },
-            "required": [
-              "sessionID",
-              "messageID",
-              "partID",
-              "field",
-              "delta"
-            ]
+            "required": ["sessionID", "messageID", "partID", "field", "delta"]
           }
         },
-        "required": [
-          "type",
-          "properties"
-        ]
+        "required": ["type", "properties"]
       },
       "Event.message.part.removed": {
         "type": "object",
@@ -11856,26 +11936,22 @@
             "type": "object",
             "properties": {
               "sessionID": {
-                "type": "string"
+                "type": "string",
+                "pattern": "^ses.*"
               },
               "messageID": {
-                "type": "string"
+                "type": "string",
+                "pattern": "^msg.*"
               },
               "partID": {
-                "type": "string"
+                "type": "string",
+                "pattern": "^prt.*"
               }
             },
-            "required": [
-              "sessionID",
-              "messageID",
-              "partID"
-            ]
+            "required": ["sessionID", "messageID", "partID"]
           }
         },
-        "required": [
-          "type",
-          "properties"
-        ]
+        "required": ["type", "properties"]
       },
       "PermissionRequest": {
         "type": "object",
@@ -11914,26 +11990,17 @@
             "type": "object",
             "properties": {
               "messageID": {
-                "type": "string"
+                "type": "string",
+                "pattern": "^msg.*"
               },
               "callID": {
                 "type": "string"
               }
             },
-            "required": [
-              "messageID",
-              "callID"
-            ]
+            "required": ["messageID", "callID"]
           }
         },
-        "required": [
-          "id",
-          "sessionID",
-          "permission",
-          "patterns",
-          "metadata",
-          "always"
-        ]
+        "required": ["id", "sessionID", "permission", "patterns", "metadata", "always"]
       },
       "Event.permission.asked": {
         "type": "object",
@@ -11946,10 +12013,7 @@
             "$ref": "#/components/schemas/PermissionRequest"
           }
         },
-        "required": [
-          "type",
-          "properties"
-        ]
+        "required": ["type", "properties"]
       },
       "Event.permission.replied": {
         "type": "object",
@@ -11962,31 +12026,22 @@
             "type": "object",
             "properties": {
               "sessionID": {
-                "type": "string"
+                "type": "string",
+                "pattern": "^ses.*"
               },
               "requestID": {
-                "type": "string"
+                "type": "string",
+                "pattern": "^per.*"
               },
               "reply": {
                 "type": "string",
-                "enum": [
-                  "once",
-                  "always",
-                  "reject"
-                ]
+                "enum": ["once", "always", "reject"]
               }
             },
-            "required": [
-              "sessionID",
-              "requestID",
-              "reply"
-            ]
+            "required": ["sessionID", "requestID", "reply"]
           }
         },
-        "required": [
-          "type",
-          "properties"
-        ]
+        "required": ["type", "properties"]
       },
       "SessionStatus": {
         "anyOf": [
@@ -11998,9 +12053,7 @@
                 "const": "idle"
               }
             },
-            "required": [
-              "type"
-            ]
+            "required": ["type"]
           },
           {
             "type": "object",
@@ -12019,12 +12072,7 @@
                 "type": "number"
               }
             },
-            "required": [
-              "type",
-              "attempt",
-              "message",
-              "next"
-            ]
+            "required": ["type", "attempt", "message", "next"]
           },
           {
             "type": "object",
@@ -12034,9 +12082,23 @@
                 "const": "busy"
               }
             },
-            "required": [
-              "type"
-            ]
+            "required": ["type"]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "offline"
+              },
+              "requestID": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              }
+            },
+            "required": ["type", "requestID", "message"]
           }
         ]
       },
@@ -12051,22 +12113,17 @@
             "type": "object",
             "properties": {
               "sessionID": {
-                "type": "string"
+                "type": "string",
+                "pattern": "^ses.*"
               },
               "status": {
                 "$ref": "#/components/schemas/SessionStatus"
               }
             },
-            "required": [
-              "sessionID",
-              "status"
-            ]
+            "required": ["sessionID", "status"]
           }
         },
-        "required": [
-          "type",
-          "properties"
-        ]
+        "required": ["type", "properties"]
       },
       "Event.session.idle": {
         "type": "object",
@@ -12079,18 +12136,14 @@
             "type": "object",
             "properties": {
               "sessionID": {
-                "type": "string"
+                "type": "string",
+                "pattern": "^ses.*"
               }
             },
-            "required": [
-              "sessionID"
-            ]
+            "required": ["sessionID"]
           }
         },
-        "required": [
-          "type",
-          "properties"
-        ]
+        "required": ["type", "properties"]
       },
       "QuestionOption": {
         "type": "object",
@@ -12102,16 +12155,9 @@
           "description": {
             "description": "Explanation of choice",
             "type": "string"
-          },
-          "mode": {
-            "description": "Optional agent/mode to switch to when selected (e.g. code, debug, orchestrator)",
-            "type": "string"
           }
         },
-        "required": [
-          "label",
-          "description"
-        ]
+        "required": ["label", "description"]
       },
       "QuestionInfo": {
         "type": "object",
@@ -12140,11 +12186,7 @@
             "type": "boolean"
           }
         },
-        "required": [
-          "question",
-          "header",
-          "options"
-        ]
+        "required": ["question", "header", "options"]
       },
       "QuestionRequest": {
         "type": "object",
@@ -12168,23 +12210,17 @@
             "type": "object",
             "properties": {
               "messageID": {
-                "type": "string"
+                "type": "string",
+                "pattern": "^msg.*"
               },
               "callID": {
                 "type": "string"
               }
             },
-            "required": [
-              "messageID",
-              "callID"
-            ]
+            "required": ["messageID", "callID"]
           }
         },
-        "required": [
-          "id",
-          "sessionID",
-          "questions"
-        ]
+        "required": ["id", "sessionID", "questions"]
       },
       "Event.question.asked": {
         "type": "object",
@@ -12197,10 +12233,7 @@
             "$ref": "#/components/schemas/QuestionRequest"
           }
         },
-        "required": [
-          "type",
-          "properties"
-        ]
+        "required": ["type", "properties"]
       },
       "QuestionAnswer": {
         "type": "array",
@@ -12219,10 +12252,12 @@
             "type": "object",
             "properties": {
               "sessionID": {
-                "type": "string"
+                "type": "string",
+                "pattern": "^ses.*"
               },
               "requestID": {
-                "type": "string"
+                "type": "string",
+                "pattern": "^que.*"
               },
               "answers": {
                 "type": "array",
@@ -12231,17 +12266,10 @@
                 }
               }
             },
-            "required": [
-              "sessionID",
-              "requestID",
-              "answers"
-            ]
+            "required": ["sessionID", "requestID", "answers"]
           }
         },
-        "required": [
-          "type",
-          "properties"
-        ]
+        "required": ["type", "properties"]
       },
       "Event.question.rejected": {
         "type": "object",
@@ -12254,22 +12282,18 @@
             "type": "object",
             "properties": {
               "sessionID": {
-                "type": "string"
+                "type": "string",
+                "pattern": "^ses.*"
               },
               "requestID": {
-                "type": "string"
+                "type": "string",
+                "pattern": "^que.*"
               }
             },
-            "required": [
-              "sessionID",
-              "requestID"
-            ]
+            "required": ["sessionID", "requestID"]
           }
         },
-        "required": [
-          "type",
-          "properties"
-        ]
+        "required": ["type", "properties"]
       },
       "Event.session.compacted": {
         "type": "object",
@@ -12282,18 +12306,14 @@
             "type": "object",
             "properties": {
               "sessionID": {
-                "type": "string"
+                "type": "string",
+                "pattern": "^ses.*"
               }
             },
-            "required": [
-              "sessionID"
-            ]
+            "required": ["sessionID"]
           }
         },
-        "required": [
-          "type",
-          "properties"
-        ]
+        "required": ["type", "properties"]
       },
       "Event.file.watcher.updated": {
         "type": "object",
@@ -12325,16 +12345,10 @@
                 ]
               }
             },
-            "required": [
-              "file",
-              "event"
-            ]
+            "required": ["file", "event"]
           }
         },
-        "required": [
-          "type",
-          "properties"
-        ]
+        "required": ["type", "properties"]
       },
       "Todo": {
         "type": "object",
@@ -12352,11 +12366,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "content",
-          "status",
-          "priority"
-        ]
+        "required": ["content", "status", "priority"]
       },
       "Event.todo.updated": {
         "type": "object",
@@ -12369,7 +12379,8 @@
             "type": "object",
             "properties": {
               "sessionID": {
-                "type": "string"
+                "type": "string",
+                "pattern": "^ses.*"
               },
               "todos": {
                 "type": "array",
@@ -12378,209 +12389,10 @@
                 }
               }
             },
-            "required": [
-              "sessionID",
-              "todos"
-            ]
+            "required": ["sessionID", "todos"]
           }
         },
-        "required": [
-          "type",
-          "properties"
-        ]
-      },
-      "Event.tui.prompt.append": {
-        "type": "object",
-        "properties": {
-          "type": {
-            "type": "string",
-            "const": "tui.prompt.append"
-          },
-          "properties": {
-            "type": "object",
-            "properties": {
-              "text": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "text"
-            ]
-          }
-        },
-        "required": [
-          "type",
-          "properties"
-        ]
-      },
-      "Event.tui.command.execute": {
-        "type": "object",
-        "properties": {
-          "type": {
-            "type": "string",
-            "const": "tui.command.execute"
-          },
-          "properties": {
-            "type": "object",
-            "properties": {
-              "command": {
-                "anyOf": [
-                  {
-                    "type": "string",
-                    "enum": [
-                      "session.list",
-                      "session.new",
-                      "session.share",
-                      "session.interrupt",
-                      "session.compact",
-                      "session.page.up",
-                      "session.page.down",
-                      "session.line.up",
-                      "session.line.down",
-                      "session.half.page.up",
-                      "session.half.page.down",
-                      "session.first",
-                      "session.last",
-                      "prompt.clear",
-                      "prompt.submit",
-                      "agent.cycle"
-                    ]
-                  },
-                  {
-                    "type": "string"
-                  }
-                ]
-              }
-            },
-            "required": [
-              "command"
-            ]
-          }
-        },
-        "required": [
-          "type",
-          "properties"
-        ]
-      },
-      "Event.tui.toast.show": {
-        "type": "object",
-        "properties": {
-          "type": {
-            "type": "string",
-            "const": "tui.toast.show"
-          },
-          "properties": {
-            "type": "object",
-            "properties": {
-              "title": {
-                "type": "string"
-              },
-              "message": {
-                "type": "string"
-              },
-              "variant": {
-                "type": "string",
-                "enum": [
-                  "info",
-                  "success",
-                  "warning",
-                  "error"
-                ]
-              },
-              "duration": {
-                "description": "Duration in milliseconds",
-                "default": 5000,
-                "type": "number"
-              }
-            },
-            "required": [
-              "message",
-              "variant"
-            ]
-          }
-        },
-        "required": [
-          "type",
-          "properties"
-        ]
-      },
-      "Event.tui.session.select": {
-        "type": "object",
-        "properties": {
-          "type": {
-            "type": "string",
-            "const": "tui.session.select"
-          },
-          "properties": {
-            "type": "object",
-            "properties": {
-              "sessionID": {
-                "description": "Session ID to navigate to",
-                "type": "string",
-                "pattern": "^ses"
-              }
-            },
-            "required": [
-              "sessionID"
-            ]
-          }
-        },
-        "required": [
-          "type",
-          "properties"
-        ]
-      },
-      "Event.mcp.tools.changed": {
-        "type": "object",
-        "properties": {
-          "type": {
-            "type": "string",
-            "const": "mcp.tools.changed"
-          },
-          "properties": {
-            "type": "object",
-            "properties": {
-              "server": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "server"
-            ]
-          }
-        },
-        "required": [
-          "type",
-          "properties"
-        ]
-      },
-      "Event.mcp.browser.open.failed": {
-        "type": "object",
-        "properties": {
-          "type": {
-            "type": "string",
-            "const": "mcp.browser.open.failed"
-          },
-          "properties": {
-            "type": "object",
-            "properties": {
-              "mcpName": {
-                "type": "string"
-              },
-              "url": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "mcpName",
-              "url"
-            ]
-          }
-        },
-        "required": [
-          "type",
-          "properties"
-        ]
+        "required": ["type", "properties"]
       },
       "Event.command.executed": {
         "type": "object",
@@ -12607,26 +12419,14 @@
                 "pattern": "^msg.*"
               }
             },
-            "required": [
-              "name",
-              "sessionID",
-              "arguments",
-              "messageID"
-            ]
+            "required": ["name", "sessionID", "arguments", "messageID"]
           }
         },
-        "required": [
-          "type",
-          "properties"
-        ]
+        "required": ["type", "properties"]
       },
       "PermissionAction": {
         "type": "string",
-        "enum": [
-          "allow",
-          "deny",
-          "ask"
-        ]
+        "enum": ["allow", "deny", "ask"]
       },
       "PermissionRule": {
         "type": "object",
@@ -12641,11 +12441,7 @@
             "$ref": "#/components/schemas/PermissionAction"
           }
         },
-        "required": [
-          "permission",
-          "pattern",
-          "action"
-        ]
+        "required": ["permission", "pattern", "action"]
       },
       "PermissionRuleset": {
         "type": "array",
@@ -12667,7 +12463,8 @@
             "type": "string"
           },
           "workspaceID": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^wrk.*"
           },
           "directory": {
             "type": "string"
@@ -12704,26 +12501,14 @@
                     },
                     "status": {
                       "type": "string",
-                      "enum": [
-                        "added",
-                        "deleted",
-                        "modified"
-                      ]
+                      "enum": ["added", "deleted", "modified"]
                     }
                   },
-                  "required": [
-                    "file",
-                    "additions",
-                    "deletions"
-                  ]
+                  "required": ["file", "additions", "deletions"]
                 }
               }
             },
-            "required": [
-              "additions",
-              "deletions",
-              "files"
-            ]
+            "required": ["additions", "deletions", "files"]
           },
           "share": {
             "type": "object",
@@ -12732,9 +12517,7 @@
                 "type": "string"
               }
             },
-            "required": [
-              "url"
-            ]
+            "required": ["url"]
           },
           "title": {
             "type": "string"
@@ -12758,10 +12541,7 @@
                 "type": "number"
               }
             },
-            "required": [
-              "created",
-              "updated"
-            ]
+            "required": ["created", "updated"]
           },
           "permission": {
             "$ref": "#/components/schemas/PermissionRuleset"
@@ -12770,10 +12550,12 @@
             "type": "object",
             "properties": {
               "messageID": {
-                "type": "string"
+                "type": "string",
+                "pattern": "^msg.*"
               },
               "partID": {
-                "type": "string"
+                "type": "string",
+                "pattern": "^prt.*"
               },
               "snapshot": {
                 "type": "string"
@@ -12782,20 +12564,10 @@
                 "type": "string"
               }
             },
-            "required": [
-              "messageID"
-            ]
+            "required": ["messageID"]
           }
         },
-        "required": [
-          "id",
-          "slug",
-          "projectID",
-          "directory",
-          "title",
-          "version",
-          "time"
-        ]
+        "required": ["id", "slug", "projectID", "directory", "title", "version", "time"]
       },
       "Event.session.created": {
         "type": "object",
@@ -12811,15 +12583,10 @@
                 "$ref": "#/components/schemas/Session"
               }
             },
-            "required": [
-              "info"
-            ]
+            "required": ["info"]
           }
         },
-        "required": [
-          "type",
-          "properties"
-        ]
+        "required": ["type", "properties"]
       },
       "Event.session.updated": {
         "type": "object",
@@ -12835,15 +12602,10 @@
                 "$ref": "#/components/schemas/Session"
               }
             },
-            "required": [
-              "info"
-            ]
+            "required": ["info"]
           }
         },
-        "required": [
-          "type",
-          "properties"
-        ]
+        "required": ["type", "properties"]
       },
       "Event.session.deleted": {
         "type": "object",
@@ -12859,15 +12621,10 @@
                 "$ref": "#/components/schemas/Session"
               }
             },
-            "required": [
-              "info"
-            ]
+            "required": ["info"]
           }
         },
-        "required": [
-          "type",
-          "properties"
-        ]
+        "required": ["type", "properties"]
       },
       "Event.session.diff": {
         "type": "object",
@@ -12880,7 +12637,8 @@
             "type": "object",
             "properties": {
               "sessionID": {
-                "type": "string"
+                "type": "string",
+                "pattern": "^ses.*"
               },
               "diff": {
                 "type": "array",
@@ -12889,16 +12647,10 @@
                 }
               }
             },
-            "required": [
-              "sessionID",
-              "diff"
-            ]
+            "required": ["sessionID", "diff"]
           }
         },
-        "required": [
-          "type",
-          "properties"
-        ]
+        "required": ["type", "properties"]
       },
       "Event.session.error": {
         "type": "object",
@@ -12911,7 +12663,8 @@
             "type": "object",
             "properties": {
               "sessionID": {
-                "type": "string"
+                "type": "string",
+                "pattern": "^ses.*"
               },
               "error": {
                 "anyOf": [
@@ -12941,10 +12694,7 @@
             }
           }
         },
-        "required": [
-          "type",
-          "properties"
-        ]
+        "required": ["type", "properties"]
       },
       "Event.session.turn.open": {
         "type": "object",
@@ -12960,15 +12710,10 @@
                 "type": "string"
               }
             },
-            "required": [
-              "sessionID"
-            ]
+            "required": ["sessionID"]
           }
         },
-        "required": [
-          "type",
-          "properties"
-        ]
+        "required": ["type", "properties"]
       },
       "Event.session.turn.close": {
         "type": "object",
@@ -12985,23 +12730,13 @@
               },
               "reason": {
                 "type": "string",
-                "enum": [
-                  "completed",
-                  "error",
-                  "interrupted"
-                ]
+                "enum": ["completed", "error", "interrupted"]
               }
             },
-            "required": [
-              "sessionID",
-              "reason"
-            ]
+            "required": ["sessionID", "reason"]
           }
         },
-        "required": [
-          "type",
-          "properties"
-        ]
+        "required": ["type", "properties"]
       },
       "Event.vcs.branch.updated": {
         "type": "object",
@@ -13019,10 +12754,7 @@
             }
           }
         },
-        "required": [
-          "type",
-          "properties"
-        ]
+        "required": ["type", "properties"]
       },
       "Event.workspace.ready": {
         "type": "object",
@@ -13038,15 +12770,10 @@
                 "type": "string"
               }
             },
-            "required": [
-              "name"
-            ]
+            "required": ["name"]
           }
         },
-        "required": [
-          "type",
-          "properties"
-        ]
+        "required": ["type", "properties"]
       },
       "Event.workspace.failed": {
         "type": "object",
@@ -13062,15 +12789,10 @@
                 "type": "string"
               }
             },
-            "required": [
-              "message"
-            ]
+            "required": ["message"]
           }
         },
-        "required": [
-          "type",
-          "properties"
-        ]
+        "required": ["type", "properties"]
       },
       "Pty": {
         "type": "object",
@@ -13096,24 +12818,13 @@
           },
           "status": {
             "type": "string",
-            "enum": [
-              "running",
-              "exited"
-            ]
+            "enum": ["running", "exited"]
           },
           "pid": {
             "type": "number"
           }
         },
-        "required": [
-          "id",
-          "title",
-          "command",
-          "args",
-          "cwd",
-          "status",
-          "pid"
-        ]
+        "required": ["id", "title", "command", "args", "cwd", "status", "pid"]
       },
       "Event.pty.created": {
         "type": "object",
@@ -13129,15 +12840,10 @@
                 "$ref": "#/components/schemas/Pty"
               }
             },
-            "required": [
-              "info"
-            ]
+            "required": ["info"]
           }
         },
-        "required": [
-          "type",
-          "properties"
-        ]
+        "required": ["type", "properties"]
       },
       "Event.pty.updated": {
         "type": "object",
@@ -13153,15 +12859,10 @@
                 "$ref": "#/components/schemas/Pty"
               }
             },
-            "required": [
-              "info"
-            ]
+            "required": ["info"]
           }
         },
-        "required": [
-          "type",
-          "properties"
-        ]
+        "required": ["type", "properties"]
       },
       "Event.pty.exited": {
         "type": "object",
@@ -13181,16 +12882,10 @@
                 "type": "number"
               }
             },
-            "required": [
-              "id",
-              "exitCode"
-            ]
+            "required": ["id", "exitCode"]
           }
         },
-        "required": [
-          "type",
-          "properties"
-        ]
+        "required": ["type", "properties"]
       },
       "Event.pty.deleted": {
         "type": "object",
@@ -13207,15 +12902,10 @@
                 "pattern": "^pty.*"
               }
             },
-            "required": [
-              "id"
-            ]
+            "required": ["id"]
           }
         },
-        "required": [
-          "type",
-          "properties"
-        ]
+        "required": ["type", "properties"]
       },
       "Event.worktree.ready": {
         "type": "object",
@@ -13234,16 +12924,10 @@
                 "type": "string"
               }
             },
-            "required": [
-              "name",
-              "branch"
-            ]
+            "required": ["name", "branch"]
           }
         },
-        "required": [
-          "type",
-          "properties"
-        ]
+        "required": ["type", "properties"]
       },
       "Event.worktree.failed": {
         "type": "object",
@@ -13259,15 +12943,32 @@
                 "type": "string"
               }
             },
-            "required": [
-              "message"
-            ]
+            "required": ["message"]
           }
         },
-        "required": [
-          "type",
-          "properties"
-        ]
+        "required": ["type", "properties"]
+      },
+      "Event.kilo-sessions.remote-status-changed": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "kilo-sessions.remote-status-changed"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "enabled": {
+                "type": "boolean"
+              },
+              "connected": {
+                "type": "boolean"
+              }
+            },
+            "required": ["enabled", "connected"]
+          }
+        },
+        "required": ["type", "properties"]
       },
       "Event": {
         "anyOf": [
@@ -13300,6 +13001,36 @@
           },
           {
             "$ref": "#/components/schemas/Event.file.edited"
+          },
+          {
+            "$ref": "#/components/schemas/Event.tui.prompt.append"
+          },
+          {
+            "$ref": "#/components/schemas/Event.tui.command.execute"
+          },
+          {
+            "$ref": "#/components/schemas/Event.tui.toast.show"
+          },
+          {
+            "$ref": "#/components/schemas/Event.tui.session.select"
+          },
+          {
+            "$ref": "#/components/schemas/Event.mcp.tools.changed"
+          },
+          {
+            "$ref": "#/components/schemas/Event.mcp.browser.open.failed"
+          },
+          {
+            "$ref": "#/components/schemas/Event.session.network.asked"
+          },
+          {
+            "$ref": "#/components/schemas/Event.session.network.replied"
+          },
+          {
+            "$ref": "#/components/schemas/Event.session.network.rejected"
+          },
+          {
+            "$ref": "#/components/schemas/Event.session.network.restored"
           },
           {
             "$ref": "#/components/schemas/Event.message.updated"
@@ -13345,24 +13076,6 @@
           },
           {
             "$ref": "#/components/schemas/Event.todo.updated"
-          },
-          {
-            "$ref": "#/components/schemas/Event.tui.prompt.append"
-          },
-          {
-            "$ref": "#/components/schemas/Event.tui.command.execute"
-          },
-          {
-            "$ref": "#/components/schemas/Event.tui.toast.show"
-          },
-          {
-            "$ref": "#/components/schemas/Event.tui.session.select"
-          },
-          {
-            "$ref": "#/components/schemas/Event.mcp.tools.changed"
-          },
-          {
-            "$ref": "#/components/schemas/Event.mcp.browser.open.failed"
           },
           {
             "$ref": "#/components/schemas/Event.command.executed"
@@ -13414,6 +13127,9 @@
           },
           {
             "$ref": "#/components/schemas/Event.worktree.failed"
+          },
+          {
+            "$ref": "#/components/schemas/Event.kilo-sessions.remote-status-changed"
           }
         ]
       },
@@ -13427,20 +13143,12 @@
             "$ref": "#/components/schemas/Event"
           }
         },
-        "required": [
-          "directory",
-          "payload"
-        ]
+        "required": ["directory", "payload"]
       },
       "LogLevel": {
         "description": "Log level",
         "type": "string",
-        "enum": [
-          "DEBUG",
-          "INFO",
-          "WARN",
-          "ERROR"
-        ]
+        "enum": ["DEBUG", "INFO", "WARN", "ERROR"]
       },
       "ServerConfig": {
         "description": "Server configuration for kilo serve and web commands",
@@ -13478,11 +13186,7 @@
         "anyOf": [
           {
             "type": "string",
-            "enum": [
-              "ask",
-              "allow",
-              "deny"
-            ]
+            "enum": ["ask", "allow", "deny"]
           },
           {
             "type": "null"
@@ -13625,11 +13329,7 @@
           },
           "mode": {
             "type": "string",
-            "enum": [
-              "subagent",
-              "primary",
-              "all"
-            ]
+            "enum": ["subagent", "primary", "all"]
           },
           "hidden": {
             "description": "Hide this subagent from the @ autocomplete menu (default: false, only applies to mode: subagent)",
@@ -13651,15 +13351,7 @@
               },
               {
                 "type": "string",
-                "enum": [
-                  "primary",
-                  "secondary",
-                  "accent",
-                  "success",
-                  "warning",
-                  "error",
-                  "info"
-                ]
+                "enum": ["primary", "secondary", "accent", "success", "warning", "error", "info"]
               }
             ]
           },
@@ -13745,15 +13437,10 @@
                       "properties": {
                         "field": {
                           "type": "string",
-                          "enum": [
-                            "reasoning_content",
-                            "reasoning_details"
-                          ]
+                          "enum": ["reasoning_content", "reasoning_details"]
                         }
                       },
-                      "required": [
-                        "field"
-                      ],
+                      "required": ["field"],
                       "additionalProperties": false
                     }
                   ]
@@ -13789,16 +13476,10 @@
                           "type": "number"
                         }
                       },
-                      "required": [
-                        "input",
-                        "output"
-                      ]
+                      "required": ["input", "output"]
                     }
                   },
-                  "required": [
-                    "input",
-                    "output"
-                  ]
+                  "required": ["input", "output"]
                 },
                 "limit": {
                   "type": "object",
@@ -13813,10 +13494,7 @@
                       "type": "number"
                     }
                   },
-                  "required": [
-                    "context",
-                    "output"
-                  ]
+                  "required": ["context", "output"]
                 },
                 "modalities": {
                   "type": "object",
@@ -13825,70 +13503,39 @@
                       "type": "array",
                       "items": {
                         "type": "string",
-                        "enum": [
-                          "text",
-                          "audio",
-                          "image",
-                          "video",
-                          "pdf"
-                        ]
+                        "enum": ["text", "audio", "image", "video", "pdf"]
                       }
                     },
                     "output": {
                       "type": "array",
                       "items": {
                         "type": "string",
-                        "enum": [
-                          "text",
-                          "audio",
-                          "image",
-                          "video",
-                          "pdf"
-                        ]
+                        "enum": ["text", "audio", "image", "video", "pdf"]
                       }
                     }
                   },
-                  "required": [
-                    "input",
-                    "output"
-                  ]
+                  "required": ["input", "output"]
                 },
                 "recommendedIndex": {
                   "type": "number"
                 },
                 "prompt": {
                   "type": "string",
-                  "enum": [
-                    "codex",
-                    "gemini",
-                    "beast",
-                    "anthropic",
-                    "trinity",
-                    "anthropic_without_todo"
-                  ]
+                  "enum": ["codex", "gemini", "beast", "anthropic", "trinity", "anthropic_without_todo"]
                 },
                 "isFree": {
                   "type": "boolean"
                 },
                 "ai_sdk_provider": {
                   "type": "string",
-                  "enum": [
-                    "anthropic",
-                    "openai",
-                    "openai-compatible",
-                    "openrouter"
-                  ]
+                  "enum": ["anthropic", "openai", "openai-compatible", "openrouter"]
                 },
                 "experimental": {
                   "type": "boolean"
                 },
                 "status": {
                   "type": "string",
-                  "enum": [
-                    "alpha",
-                    "beta",
-                    "deprecated"
-                  ]
+                  "enum": ["alpha", "beta", "deprecated"]
                 },
                 "options": {
                   "type": "object",
@@ -13967,10 +13614,10 @@
                 "type": "boolean"
               },
               "timeout": {
-                "description": "Timeout in milliseconds for requests to this provider. Default is 300000 (5 minutes). Set to false to disable timeout.",
+                "description": "Timeout in milliseconds for requests to this provider. Default is 120000 (2 minutes). Set to false to disable timeout.",
                 "anyOf": [
                   {
-                    "description": "Timeout in milliseconds for requests to this provider. Default is 300000 (5 minutes). Set to false to disable timeout.",
+                    "description": "Timeout in milliseconds for requests to this provider. Default is 120000 (2 minutes). Set to false to disable timeout.",
                     "type": "integer",
                     "exclusiveMinimum": 0,
                     "maximum": 9007199254740991
@@ -13981,6 +13628,12 @@
                     "const": false
                   }
                 ]
+              },
+              "chunkTimeout": {
+                "description": "Timeout in milliseconds between streamed SSE chunks for this provider. If no chunk arrives within this window, the request is aborted.",
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
               }
             },
             "additionalProperties": {}
@@ -14024,10 +13677,7 @@
             "maximum": 9007199254740991
           }
         },
-        "required": [
-          "type",
-          "command"
-        ],
+        "required": ["type", "command"],
         "additionalProperties": false
       },
       "McpOAuthConfig": {
@@ -14093,19 +13743,13 @@
             "maximum": 9007199254740991
           }
         },
-        "required": [
-          "type",
-          "url"
-        ],
+        "required": ["type", "url"],
         "additionalProperties": false
       },
       "LayoutConfig": {
         "description": "@deprecated Always uses stretch layout.",
         "type": "string",
-        "enum": [
-          "auto",
-          "stretch"
-        ]
+        "enum": ["auto", "stretch"]
       },
       "Config": {
         "type": "object",
@@ -14145,9 +13789,7 @@
                   "type": "boolean"
                 }
               },
-              "required": [
-                "template"
-              ]
+              "required": ["template"]
             }
           },
           "skills": {
@@ -14188,16 +13830,13 @@
             }
           },
           "snapshot": {
+            "description": "Enable or disable snapshot tracking. When false, filesystem snapshots are not recorded and undoing or reverting will not undo/redo file changes. Defaults to true.",
             "type": "boolean"
           },
           "share": {
             "description": "Control sharing behavior:'manual' allows manual sharing via commands, 'auto' enables automatic sharing, 'disabled' disables all sharing",
             "type": "string",
-            "enum": [
-              "manual",
-              "auto",
-              "disabled"
-            ]
+            "enum": ["manual", "auto", "disabled"]
           },
           "autoshare": {
             "description": "@deprecated Use 'share' field instead. Share newly created sessions automatically",
@@ -14352,9 +13991,7 @@
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "enabled"
-                  ],
+                  "required": ["enabled"],
                   "additionalProperties": false
                 }
               ]
@@ -14424,9 +14061,7 @@
                           "const": true
                         }
                       },
-                      "required": [
-                        "disabled"
-                      ]
+                      "required": ["disabled"]
                     },
                     {
                       "type": "object",
@@ -14463,9 +14098,7 @@
                           "additionalProperties": {}
                         }
                       },
-                      "required": [
-                        "command"
-                      ]
+                      "required": ["command"]
                     }
                   ]
                 }
@@ -14582,11 +14215,7 @@
             "const": false
           }
         },
-        "required": [
-          "data",
-          "errors",
-          "success"
-        ]
+        "required": ["data", "errors", "success"]
       },
       "OAuth": {
         "type": "object",
@@ -14611,12 +14240,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "type",
-          "refresh",
-          "access",
-          "expires"
-        ]
+        "required": ["type", "refresh", "access", "expires"]
       },
       "ApiAuth": {
         "type": "object",
@@ -14629,10 +14253,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "type",
-          "key"
-        ]
+        "required": ["type", "key"]
       },
       "WellKnownAuth": {
         "type": "object",
@@ -14648,11 +14269,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "type",
-          "key",
-          "token"
-        ]
+        "required": ["type", "key", "token"]
       },
       "Auth": {
         "anyOf": [
@@ -14681,15 +14298,10 @@
                 "type": "string"
               }
             },
-            "required": [
-              "message"
-            ]
+            "required": ["message"]
           }
         },
-        "required": [
-          "name",
-          "data"
-        ]
+        "required": ["name", "data"]
       },
       "Model": {
         "type": "object",
@@ -14713,11 +14325,7 @@
                 "type": "string"
               }
             },
-            "required": [
-              "id",
-              "url",
-              "npm"
-            ]
+            "required": ["id", "url", "npm"]
           },
           "name": {
             "type": "string"
@@ -14759,13 +14367,7 @@
                     "type": "boolean"
                   }
                 },
-                "required": [
-                  "text",
-                  "audio",
-                  "image",
-                  "video",
-                  "pdf"
-                ]
+                "required": ["text", "audio", "image", "video", "pdf"]
               },
               "output": {
                 "type": "object",
@@ -14786,13 +14388,7 @@
                     "type": "boolean"
                   }
                 },
-                "required": [
-                  "text",
-                  "audio",
-                  "image",
-                  "video",
-                  "pdf"
-                ]
+                "required": ["text", "audio", "image", "video", "pdf"]
               },
               "interleaved": {
                 "anyOf": [
@@ -14804,28 +14400,15 @@
                     "properties": {
                       "field": {
                         "type": "string",
-                        "enum": [
-                          "reasoning_content",
-                          "reasoning_details"
-                        ]
+                        "enum": ["reasoning_content", "reasoning_details"]
                       }
                     },
-                    "required": [
-                      "field"
-                    ]
+                    "required": ["field"]
                   }
                 ]
               }
             },
-            "required": [
-              "temperature",
-              "reasoning",
-              "attachment",
-              "toolcall",
-              "input",
-              "output",
-              "interleaved"
-            ]
+            "required": ["temperature", "reasoning", "attachment", "toolcall", "input", "output", "interleaved"]
           },
           "cost": {
             "type": "object",
@@ -14846,10 +14429,7 @@
                     "type": "number"
                   }
                 },
-                "required": [
-                  "read",
-                  "write"
-                ]
+                "required": ["read", "write"]
               },
               "experimentalOver200K": {
                 "type": "object",
@@ -14870,24 +14450,13 @@
                         "type": "number"
                       }
                     },
-                    "required": [
-                      "read",
-                      "write"
-                    ]
+                    "required": ["read", "write"]
                   }
                 },
-                "required": [
-                  "input",
-                  "output",
-                  "cache"
-                ]
+                "required": ["input", "output", "cache"]
               }
             },
-            "required": [
-              "input",
-              "output",
-              "cache"
-            ]
+            "required": ["input", "output", "cache"]
           },
           "limit": {
             "type": "object",
@@ -14902,19 +14471,11 @@
                 "type": "number"
               }
             },
-            "required": [
-              "context",
-              "output"
-            ]
+            "required": ["context", "output"]
           },
           "status": {
             "type": "string",
-            "enum": [
-              "alpha",
-              "beta",
-              "deprecated",
-              "active"
-            ]
+            "enum": ["alpha", "beta", "deprecated", "active"]
           },
           "options": {
             "type": "object",
@@ -14953,26 +14514,14 @@
           },
           "prompt": {
             "type": "string",
-            "enum": [
-              "codex",
-              "gemini",
-              "beast",
-              "anthropic",
-              "trinity",
-              "anthropic_without_todo"
-            ]
+            "enum": ["codex", "gemini", "beast", "anthropic", "trinity", "anthropic_without_todo"]
           },
           "isFree": {
             "type": "boolean"
           },
           "ai_sdk_provider": {
             "type": "string",
-            "enum": [
-              "anthropic",
-              "openai",
-              "openai-compatible",
-              "openrouter"
-            ]
+            "enum": ["anthropic", "openai", "openai-compatible", "openrouter"]
           }
         },
         "required": [
@@ -15000,12 +14549,7 @@
           },
           "source": {
             "type": "string",
-            "enum": [
-              "env",
-              "config",
-              "custom",
-              "api"
-            ]
+            "enum": ["env", "config", "custom", "api"]
           },
           "env": {
             "type": "array",
@@ -15033,14 +14577,7 @@
             }
           }
         },
-        "required": [
-          "id",
-          "name",
-          "source",
-          "env",
-          "options",
-          "models"
-        ]
+        "required": ["id", "name", "source", "env", "options", "models"]
       },
       "ToolIDs": {
         "type": "array",
@@ -15059,11 +14596,7 @@
           },
           "parameters": {}
         },
-        "required": [
-          "id",
-          "description",
-          "parameters"
-        ]
+        "required": ["id", "description", "parameters"]
       },
       "ToolList": {
         "type": "array",
@@ -15123,15 +14656,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "type",
-          "branch",
-          "name",
-          "directory",
-          "extra",
-          "projectID"
-        ]
+        "required": ["id", "type", "branch", "name", "directory", "extra", "projectID"]
       },
       "Worktree": {
         "type": "object",
@@ -15146,11 +14671,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "name",
-          "branch",
-          "directory"
-        ]
+        "required": ["name", "branch", "directory"]
       },
       "WorktreeCreateInput": {
         "type": "object",
@@ -15171,9 +14692,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "directory"
-        ]
+        "required": ["directory"]
       },
       "WorktreeResetInput": {
         "type": "object",
@@ -15182,9 +14701,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "directory"
-        ]
+        "required": ["directory"]
       },
       "WorktreeDiffItem": {
         "type": "object",
@@ -15206,11 +14723,7 @@
           },
           "status": {
             "type": "string",
-            "enum": [
-              "added",
-              "deleted",
-              "modified"
-            ]
+            "enum": ["added", "deleted", "modified"]
           },
           "tracked": {
             "type": "boolean"
@@ -15250,10 +14763,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "worktree"
-        ]
+        "required": ["id", "worktree"]
       },
       "GlobalSession": {
         "type": "object",
@@ -15269,7 +14779,8 @@
             "type": "string"
           },
           "workspaceID": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^wrk.*"
           },
           "directory": {
             "type": "string"
@@ -15306,26 +14817,14 @@
                     },
                     "status": {
                       "type": "string",
-                      "enum": [
-                        "added",
-                        "deleted",
-                        "modified"
-                      ]
+                      "enum": ["added", "deleted", "modified"]
                     }
                   },
-                  "required": [
-                    "file",
-                    "additions",
-                    "deletions"
-                  ]
+                  "required": ["file", "additions", "deletions"]
                 }
               }
             },
-            "required": [
-              "additions",
-              "deletions",
-              "files"
-            ]
+            "required": ["additions", "deletions", "files"]
           },
           "share": {
             "type": "object",
@@ -15334,9 +14833,7 @@
                 "type": "string"
               }
             },
-            "required": [
-              "url"
-            ]
+            "required": ["url"]
           },
           "title": {
             "type": "string"
@@ -15360,10 +14857,7 @@
                 "type": "number"
               }
             },
-            "required": [
-              "created",
-              "updated"
-            ]
+            "required": ["created", "updated"]
           },
           "permission": {
             "$ref": "#/components/schemas/PermissionRuleset"
@@ -15372,10 +14866,12 @@
             "type": "object",
             "properties": {
               "messageID": {
-                "type": "string"
+                "type": "string",
+                "pattern": "^msg.*"
               },
               "partID": {
-                "type": "string"
+                "type": "string",
+                "pattern": "^prt.*"
               },
               "snapshot": {
                 "type": "string"
@@ -15384,9 +14880,7 @@
                 "type": "string"
               }
             },
-            "required": [
-              "messageID"
-            ]
+            "required": ["messageID"]
           },
           "project": {
             "anyOf": [
@@ -15397,18 +14891,12 @@
                 "type": "null"
               }
             ]
+          },
+          "worktreeName": {
+            "type": "string"
           }
         },
-        "required": [
-          "id",
-          "slug",
-          "projectID",
-          "directory",
-          "title",
-          "version",
-          "time",
-          "project"
-        ]
+        "required": ["id", "slug", "projectID", "directory", "title", "version", "time", "project"]
       },
       "McpResource": {
         "type": "object",
@@ -15429,17 +14917,14 @@
             "type": "string"
           }
         },
-        "required": [
-          "name",
-          "uri",
-          "client"
-        ]
+        "required": ["name", "uri", "client"]
       },
       "TextPartInput": {
         "type": "object",
         "properties": {
           "id": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^prt.*"
           },
           "type": {
             "type": "string",
@@ -15464,9 +14949,7 @@
                 "type": "number"
               }
             },
-            "required": [
-              "start"
-            ]
+            "required": ["start"]
           },
           "metadata": {
             "type": "object",
@@ -15476,16 +14959,14 @@
             "additionalProperties": {}
           }
         },
-        "required": [
-          "type",
-          "text"
-        ]
+        "required": ["type", "text"]
       },
       "FilePartInput": {
         "type": "object",
         "properties": {
           "id": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^prt.*"
           },
           "type": {
             "type": "string",
@@ -15504,17 +14985,14 @@
             "$ref": "#/components/schemas/FilePartSource"
           }
         },
-        "required": [
-          "type",
-          "mime",
-          "url"
-        ]
+        "required": ["type", "mime", "url"]
       },
       "AgentPartInput": {
         "type": "object",
         "properties": {
           "id": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^prt.*"
           },
           "type": {
             "type": "string",
@@ -15540,23 +15018,17 @@
                 "maximum": 9007199254740991
               }
             },
-            "required": [
-              "value",
-              "start",
-              "end"
-            ]
+            "required": ["value", "start", "end"]
           }
         },
-        "required": [
-          "type",
-          "name"
-        ]
+        "required": ["type", "name"]
       },
       "SubtaskPartInput": {
         "type": "object",
         "properties": {
           "id": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^prt.*"
           },
           "type": {
             "type": "string",
@@ -15581,21 +15053,13 @@
                 "type": "string"
               }
             },
-            "required": [
-              "providerID",
-              "modelID"
-            ]
+            "required": ["providerID", "modelID"]
           },
           "command": {
             "type": "string"
           }
         },
-        "required": [
-          "type",
-          "prompt",
-          "description",
-          "agent"
-        ]
+        "required": ["type", "prompt", "description", "agent"]
       },
       "ProviderAuthMethod": {
         "type": "object",
@@ -15614,12 +15078,117 @@
           },
           "label": {
             "type": "string"
+          },
+          "prompts": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "text"
+                    },
+                    "key": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "placeholder": {
+                      "type": "string"
+                    },
+                    "when": {
+                      "type": "object",
+                      "properties": {
+                        "key": {
+                          "type": "string"
+                        },
+                        "op": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "const": "eq"
+                            },
+                            {
+                              "type": "string",
+                              "const": "neq"
+                            }
+                          ]
+                        },
+                        "value": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["key", "op", "value"]
+                    }
+                  },
+                  "required": ["type", "key", "message"]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "select"
+                    },
+                    "key": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "options": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "label": {
+                            "type": "string"
+                          },
+                          "value": {
+                            "type": "string"
+                          },
+                          "hint": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["label", "value"]
+                      }
+                    },
+                    "when": {
+                      "type": "object",
+                      "properties": {
+                        "key": {
+                          "type": "string"
+                        },
+                        "op": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "const": "eq"
+                            },
+                            {
+                              "type": "string",
+                              "const": "neq"
+                            }
+                          ]
+                        },
+                        "value": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["key", "op", "value"]
+                    }
+                  },
+                  "required": ["type", "key", "message", "options"]
+                }
+              ]
+            }
           }
         },
-        "required": [
-          "type",
-          "label"
-        ]
+        "required": ["type", "label"]
       },
       "ProviderAuthAuthorization": {
         "type": "object",
@@ -15643,11 +15212,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "url",
-          "method",
-          "instructions"
-        ]
+        "required": ["url", "method", "instructions"]
       },
       "Symbol": {
         "type": "object",
@@ -15668,17 +15233,10 @@
                 "$ref": "#/components/schemas/Range"
               }
             },
-            "required": [
-              "uri",
-              "range"
-            ]
+            "required": ["uri", "range"]
           }
         },
-        "required": [
-          "name",
-          "kind",
-          "location"
-        ]
+        "required": ["name", "kind", "location"]
       },
       "FileNode": {
         "type": "object",
@@ -15694,32 +15252,20 @@
           },
           "type": {
             "type": "string",
-            "enum": [
-              "file",
-              "directory"
-            ]
+            "enum": ["file", "directory"]
           },
           "ignored": {
             "type": "boolean"
           }
         },
-        "required": [
-          "name",
-          "path",
-          "absolute",
-          "type",
-          "ignored"
-        ]
+        "required": ["name", "path", "absolute", "type", "ignored"]
       },
       "FileContent": {
         "type": "object",
         "properties": {
           "type": {
             "type": "string",
-            "enum": [
-              "text",
-              "binary"
-            ]
+            "enum": ["text", "binary"]
           },
           "content": {
             "type": "string"
@@ -15766,24 +15312,14 @@
                       }
                     }
                   },
-                  "required": [
-                    "oldStart",
-                    "oldLines",
-                    "newStart",
-                    "newLines",
-                    "lines"
-                  ]
+                  "required": ["oldStart", "oldLines", "newStart", "newLines", "lines"]
                 }
               },
               "index": {
                 "type": "string"
               }
             },
-            "required": [
-              "oldFileName",
-              "newFileName",
-              "hunks"
-            ]
+            "required": ["oldFileName", "newFileName", "hunks"]
           },
           "encoding": {
             "type": "string",
@@ -15793,10 +15329,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "type",
-          "content"
-        ]
+        "required": ["type", "content"]
       },
       "File": {
         "type": "object",
@@ -15816,19 +15349,10 @@
           },
           "status": {
             "type": "string",
-            "enum": [
-              "added",
-              "deleted",
-              "modified"
-            ]
+            "enum": ["added", "deleted", "modified"]
           }
         },
-        "required": [
-          "path",
-          "added",
-          "removed",
-          "status"
-        ]
+        "required": ["path", "added", "removed", "status"]
       },
       "MCPStatusConnected": {
         "type": "object",
@@ -15838,9 +15362,7 @@
             "const": "connected"
           }
         },
-        "required": [
-          "status"
-        ]
+        "required": ["status"]
       },
       "MCPStatusDisabled": {
         "type": "object",
@@ -15850,9 +15372,7 @@
             "const": "disabled"
           }
         },
-        "required": [
-          "status"
-        ]
+        "required": ["status"]
       },
       "MCPStatusFailed": {
         "type": "object",
@@ -15865,10 +15385,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "status",
-          "error"
-        ]
+        "required": ["status", "error"]
       },
       "MCPStatusNeedsAuth": {
         "type": "object",
@@ -15878,9 +15395,7 @@
             "const": "needs_auth"
           }
         },
-        "required": [
-          "status"
-        ]
+        "required": ["status"]
       },
       "MCPStatusNeedsClientRegistration": {
         "type": "object",
@@ -15893,10 +15408,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "status",
-          "error"
-        ]
+        "required": ["status", "error"]
       },
       "MCPStatus": {
         "anyOf": [
@@ -15936,13 +15448,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "home",
-          "state",
-          "config",
-          "worktree",
-          "directory"
-        ]
+        "required": ["home", "state", "config", "worktree", "directory"]
       },
       "VcsInfo": {
         "type": "object",
@@ -15951,9 +15457,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "branch"
-        ]
+        "required": ["branch"]
       },
       "Command": {
         "type": "object",
@@ -15972,11 +15476,7 @@
           },
           "source": {
             "type": "string",
-            "enum": [
-              "command",
-              "mcp",
-              "skill"
-            ]
+            "enum": ["command", "mcp", "skill"]
           },
           "template": {
             "anyOf": [
@@ -15998,11 +15498,7 @@
             }
           }
         },
-        "required": [
-          "name",
-          "template",
-          "hints"
-        ]
+        "required": ["name", "template", "hints"]
       },
       "Agent": {
         "type": "object",
@@ -16016,21 +15512,17 @@
           "description": {
             "type": "string"
           },
+          "deprecated": {
+            "type": "boolean"
+          },
           "mode": {
             "type": "string",
-            "enum": [
-              "subagent",
-              "primary",
-              "all"
-            ]
+            "enum": ["subagent", "primary", "all"]
           },
           "native": {
             "type": "boolean"
           },
           "hidden": {
-            "type": "boolean"
-          },
-          "deprecated": {
             "type": "boolean"
           },
           "topP": {
@@ -16055,10 +15547,7 @@
                 "type": "string"
               }
             },
-            "required": [
-              "modelID",
-              "providerID"
-            ]
+            "required": ["modelID", "providerID"]
           },
           "variant": {
             "type": "string"
@@ -16079,12 +15568,7 @@
             "maximum": 9007199254740991
           }
         },
-        "required": [
-          "name",
-          "mode",
-          "permission",
-          "options"
-        ]
+        "required": ["name", "mode", "permission", "options"]
       },
       "LSPStatus": {
         "type": "object",
@@ -16111,12 +15595,7 @@
             ]
           }
         },
-        "required": [
-          "id",
-          "name",
-          "root",
-          "status"
-        ]
+        "required": ["id", "name", "root", "status"]
       },
       "FormatterStatus": {
         "type": "object",
@@ -16134,11 +15613,7 @@
             "type": "boolean"
           }
         },
-        "required": [
-          "name",
-          "extensions",
-          "enabled"
-        ]
+        "required": ["name", "extensions", "enabled"]
       }
     }
   }

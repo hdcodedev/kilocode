@@ -7,10 +7,11 @@ import { pathToFileURL, fileURLToPath } from "url"
 import { LSPServer } from "./server"
 import z from "zod"
 import { Config } from "../config/config"
-import { spawn } from "child_process"
 import { Instance } from "../project/instance"
 import { Flag } from "@/flag/flag"
 import { TsClient } from "../kilocode/ts-client" // kilocode_change
+import { Process } from "../util/process"
+import { spawn as lspspawn } from "./launch"
 
 export namespace LSP {
   const log = Log.create({ service: "lsp" })
@@ -113,13 +114,12 @@ export namespace LSP {
           extensions: item.extensions ?? existing?.extensions ?? [],
           spawn: async (root) => {
             return {
-              process: spawn(item.command[0], item.command.slice(1), {
+              process: lspspawn(item.command[0], item.command.slice(1), {
                 cwd: root,
                 env: {
                   ...process.env,
                   ...item.env,
                 },
-                windowsHide: true, // kilocode_change - prevent CMD window flash on Windows
               }),
               initialization: item.initialization,
             }
@@ -178,6 +178,12 @@ export namespace LSP {
 
   async function getClients(file: string) {
     const s = await state()
+
+    // Only spawn LSP clients for files within the instance directory
+    if (!Instance.containsPath(file)) {
+      return []
+    }
+
     const extension = path.parse(file).ext || file
     const result: LSPClient.Info[] = []
 
@@ -201,21 +207,20 @@ export namespace LSP {
         serverID: server.id,
         server: handle,
         root,
-      }).catch((err) => {
+      }).catch(async (err) => {
         s.broken.add(key)
-        handle.process.kill()
+        await Process.stop(handle.process)
         log.error(`Failed to initialize LSP client ${server.id}`, { error: err })
         return undefined
       })
 
       if (!client) {
-        handle.process.kill()
         return undefined
       }
 
       const existing = s.clients.find((x) => x.root === root && x.serverID === server.id)
       if (existing) {
-        handle.process.kill()
+        await Process.stop(handle.process)
         return existing
       }
 
